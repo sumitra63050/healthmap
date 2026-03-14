@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Shield, CheckCircle, XCircle, LogOut, Search, User, BriefcaseMedical, Building2, FileText, Activity } from "lucide-react"
+import { Shield, CheckCircle, XCircle, LogOut, Search, User, BriefcaseMedical, Building2, FileText } from "lucide-react"
 import API from "../services/api"
 
 export default function AdminDashboard() {
-    const [pendingDoctors, setPendingDoctors] = useState([])
     const [pendingHospitals, setPendingHospitals] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
@@ -19,7 +18,6 @@ export default function AdminDashboard() {
             const res = await API.get("/admin/pending", {
                 headers: { Authorization: token }
             })
-            setPendingDoctors(res.data.doctors || [])
             setPendingHospitals(res.data.hospitals || [])
         } catch (err) {
             setError(err.response?.data?.error || "Failed to load pending verifications")
@@ -74,7 +72,7 @@ export default function AdminDashboard() {
             <nav className="bg-white border-b border-slate-200 px-8 py-4 sticky top-0 z-10 shadow-sm">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Activity className="h-7 w-7 text-teal-600" />
+                        <img src="/logo.png" alt="HealthMap Logo" className="h-8 w-auto" />
                         <span className="text-xl font-bold text-teal-900">HealthMap Admin</span>
                     </div>
                     <div className="flex items-center gap-4">
@@ -91,7 +89,7 @@ export default function AdminDashboard() {
             <main className="max-w-7xl mx-auto px-4 sm:px-8 py-10">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-slate-900">Verification Dashboard</h1>
-                    <p className="text-slate-500 mt-1">Review and approve new Doctor and Hospital applications.</p>
+                    <p className="text-slate-500 mt-1">Review and approve new Hospital applications.</p>
                 </div>
 
                 {error && (
@@ -101,39 +99,6 @@ export default function AdminDashboard() {
                 )}
 
                 <div className="space-y-10">
-                    <section>
-                        <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
-                            <BriefcaseMedical className="h-6 w-6 text-indigo-500" />
-                            Pending Doctors ({pendingDoctors.length})
-                        </h2>
-                        {pendingDoctors.length === 0 ? (
-                            <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500 shadow-sm">
-                                No pending doctor verifications.
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {pendingDoctors.map(doctor => (
-                                    <div key={doctor._id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                                        <h3 className="text-lg font-bold text-slate-800">{doctor.name}</h3>
-                                        <p className="text-slate-500 text-sm mb-4">{doctor.email}</p>
-                                        <div className="bg-indigo-50 p-3 rounded-lg mb-6">
-                                            <p className="text-xs text-indigo-800 font-semibold mb-1">Medical License Number</p>
-                                            <p className="font-mono text-indigo-900 text-sm break-all">{doctor.licenseNumber}</p>
-                                        </div>
-                                        <div className="flex gap-3">
-                                            <button onClick={() => verifyUser('doctor', doctor._id)} className="flex-1 px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-medium text-sm flex items-center justify-center gap-1 transition-colors">
-                                                <CheckCircle className="h-4 w-4" /> Approve
-                                            </button>
-                                            <button onClick={() => rejectUser('doctor', doctor._id)} className="flex-1 px-4 py-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl font-medium text-sm flex items-center justify-center gap-1 transition-colors">
-                                                <XCircle className="h-4 w-4" /> Reject
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </section>
-
                     <section>
                         <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
                             <Building2 className="h-6 w-6 text-blue-500" />

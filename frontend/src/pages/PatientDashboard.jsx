@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Activity, LogOut, FileText, Upload, User, Key, Calendar, RefreshCw, Trash2, CheckCircle } from "lucide-react"
+import { LogOut, FileText, Upload, User, Key, Calendar, RefreshCw, Trash2, CheckCircle } from "lucide-react"
 import API from "../services/api"
 
 export default function PatientDashboard() {
@@ -84,7 +84,7 @@ export default function PatientDashboard() {
         return (
             <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <Activity className="h-10 w-10 text-teal-600 animate-spin" />
+                    <img src="/logo.png" alt="HealthMap Logo" className="h-12 w-auto animate-pulse" />
                     <p className="text-teal-900 font-medium">Loading your portal...</p>
                 </div>
             </div>
@@ -110,13 +110,13 @@ export default function PatientDashboard() {
             <nav className="bg-white border-b border-slate-200 px-8 py-4 sticky top-0 z-10 shadow-sm">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Activity className="h-7 w-7 text-teal-600" />
+                        <img src="/logo.png" alt="HealthMap Logo" className="h-8 w-auto" />
                         <span className="text-xl font-bold text-teal-900">HealthMap</span>
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg">
                             <User className="h-4 w-4" />
-                            {data.name}
+                            {data.name} {data.gender ? `(${data.gender})` : ''}
                         </div>
                         <button onClick={logout} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors" title="Logout">
                             <LogOut className="h-5 w-5" />
@@ -147,7 +147,7 @@ export default function PatientDashboard() {
                                 <h3 className="text-2xl font-bold tracking-tight">{data.medicalId || "Not Assigned"}</h3>
                             </div>
                             <div className="p-2 bg-white/20 rounded-xl">
-                                <Activity className="h-6 w-6 text-white" />
+                                <img src="/logo.png" alt="Logo" className="h-6 w-auto brightness-0 invert" />
                             </div>
                         </div>
                         <p className="text-teal-50 text-sm opacity-90">Give this ID to hospital staff when getting tested.</p>

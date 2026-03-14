@@ -1,19 +1,34 @@
-import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { Activity, User, Mail, Lock, CheckCircle, BriefcaseMedical, Building2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { User, Mail, Lock, CheckCircle, BriefcaseMedical, Building2 } from "lucide-react"
 import API from "../services/api"
 
 export default function Register() {
     const [name, setName] = useState("")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
-    const [role, setRole] = useState("patient")
+    const [searchParams] = useSearchParams()
+    const urlRole = searchParams.get("role")
+    const [role, setRole] = useState(urlRole || "patient")
+    const [dob, setDob] = useState("")
+    const [gender, setGender] = useState("")
+    const [bloodGroup, setBloodGroup] = useState("")
+    const [aadhaarNumber, setAadhaarNumber] = useState("")
     const [licenseNumber, setLicenseNumber] = useState("")
+    const [hospitalId, setHospitalId] = useState("")
+    const [hospitals, setHospitals] = useState([])
     const [registrationNumber, setRegistrationNumber] = useState("")
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
     const [success, setSuccess] = useState(false)
     const navigate = useNavigate()
+
+    useEffect(() => {
+        // Fetch verified hospitals for doctor dropdown
+        API.get("/auth/verified-hospitals")
+            .then(res => setHospitals(res.data))
+            .catch(() => {})
+    }, [])
 
     const register = async (e) => {
         e.preventDefault()
@@ -21,7 +36,21 @@ export default function Register() {
         setError("")
         try {
             const payload = { name, email, password, role }
-            if (role === 'doctor') payload.licenseNumber = licenseNumber
+            if (role === 'patient') {
+                if (aadhaarNumber.length !== 12 || !/^\d+$/.test(aadhaarNumber)) {
+                    setError("Aadhaar Number must be exactly 12 digits")
+                    setLoading(false)
+                    return
+                }
+                payload.dob = dob
+                payload.gender = gender
+                payload.bloodGroup = bloodGroup
+                payload.aadhaarNumber = aadhaarNumber
+            }
+            if (role === 'doctor') {
+                payload.licenseNumber = licenseNumber
+                payload.hospitalId = hospitalId
+            }
             if (role === 'hospital') payload.registrationNumber = registrationNumber
 
             await API.post("/auth/register", payload)
@@ -41,7 +70,7 @@ export default function Register() {
                 <div className="p-8">
                     <div className="flex justify-center mb-8">
                         <Link to="/" className="flex items-center gap-2">
-                            <Activity className="h-8 w-8 text-teal-600" />
+                            <img src="/logo.png" alt="HealthMap Logo" className="h-10 w-auto" />
                             <span className="text-2xl font-bold text-teal-900">HealthMap</span>
                         </Link>
                     </div>
@@ -63,38 +92,40 @@ export default function Register() {
                         </div>
                     ) : (
                         <form onSubmit={register} className="space-y-5">
-                            <div className="grid grid-cols-3 gap-2 mb-6 p-1 bg-slate-100 rounded-xl">
-                                <button
-                                    type="button"
-                                    onClick={() => setRole("patient")}
-                                    className={`flex flex-col items-center justify-center py-2 rounded-lg text-xs font-medium transition-all ${
-                                        role === "patient" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                                    }`}
-                                >
-                                    <User className="h-4 w-4 mb-1" />
-                                    Patient
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setRole("doctor")}
-                                    className={`flex flex-col items-center justify-center py-2 rounded-lg text-xs font-medium transition-all ${
-                                        role === "doctor" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                                    }`}
-                                >
-                                    <BriefcaseMedical className="h-4 w-4 mb-1" />
-                                    Doctor
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setRole("hospital")}
-                                    className={`flex flex-col items-center justify-center py-2 rounded-lg text-xs font-medium transition-all ${
-                                        role === "hospital" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                                    }`}
-                                >
-                                    <Building2 className="h-4 w-4 mb-1" />
-                                    Hospital
-                                </button>
-                            </div>
+                            {!urlRole && (
+                                <div className="grid grid-cols-3 gap-2 mb-6 p-1 bg-slate-100 rounded-xl">
+                                    <button
+                                        type="button"
+                                        onClick={() => setRole("patient")}
+                                        className={`flex flex-col items-center justify-center py-2 rounded-lg text-xs font-medium transition-all ${
+                                            role === "patient" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                        }`}
+                                    >
+                                        <User className="h-4 w-4 mb-1" />
+                                        Patient
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setRole("doctor")}
+                                        className={`flex flex-col items-center justify-center py-2 rounded-lg text-xs font-medium transition-all ${
+                                            role === "doctor" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                        }`}
+                                    >
+                                        <BriefcaseMedical className="h-4 w-4 mb-1" />
+                                        Doctor
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setRole("hospital")}
+                                        className={`flex flex-col items-center justify-center py-2 rounded-lg text-xs font-medium transition-all ${
+                                            role === "hospital" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                        }`}
+                                    >
+                                        <Building2 className="h-4 w-4 mb-1" />
+                                        Hospital
+                                    </button>
+                                </div>
+                            )}
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700 block">
@@ -153,23 +184,112 @@ export default function Register() {
                                 </div>
                             </div>
 
-                            {role === "doctor" && (
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-700 block">Medical License Number</label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <BriefcaseMedical className="h-5 w-5 text-slate-400" />
+                            {role === "patient" && (
+                                <>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-700 block">Date of Birth</label>
+                                        <div className="relative">
+                                            <input
+                                                type="date"
+                                                required
+                                                className="block w-full px-3 py-3 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow"
+                                                value={dob}
+                                                onChange={e => setDob(e.target.value)}
+                                            />
                                         </div>
-                                        <input
-                                            type="text"
-                                            required
-                                            className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow"
-                                            placeholder="e.g. MED-12345"
-                                            value={licenseNumber}
-                                            onChange={e => setLicenseNumber(e.target.value)}
-                                        />
                                     </div>
-                                </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-slate-700 block">Gender</label>
+                                            <select
+                                                required
+                                                className="block w-full px-3 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow bg-white"
+                                                value={gender}
+                                                onChange={e => setGender(e.target.value)}
+                                            >
+                                                <option value="" disabled>Select Gender</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-slate-700 block">Blood Group</label>
+                                            <select
+                                                required
+                                                className="block w-full px-3 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow bg-white"
+                                                value={bloodGroup}
+                                                onChange={e => setBloodGroup(e.target.value)}
+                                            >
+                                                <option value="" disabled>Select</option>
+                                                <option value="A+">A+</option>
+                                                <option value="A-">A-</option>
+                                                <option value="B+">B+</option>
+                                                <option value="B-">B-</option>
+                                                <option value="AB+">AB+</option>
+                                                <option value="AB-">AB-</option>
+                                                <option value="O+">O+</option>
+                                                <option value="O-">O-</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-700 block">Aadhaar Number</label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                required
+                                                maxLength="12"
+                                                className="block w-full px-3 py-3 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow"
+                                                placeholder="12 digit Aadhaar Number"
+                                                value={aadhaarNumber}
+                                                onChange={e => setAadhaarNumber(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {role === "doctor" && (
+                                <>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-700 block">Medical License Number</label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <BriefcaseMedical className="h-5 w-5 text-slate-400" />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow"
+                                                placeholder="e.g. MED-12345"
+                                                value={licenseNumber}
+                                                onChange={e => setLicenseNumber(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-700 block">Select Hospital</label>
+                                        <select
+                                            required
+                                            className="block w-full px-3 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow bg-white"
+                                            value={hospitalId}
+                                            onChange={e => setHospitalId(e.target.value)}
+                                        >
+                                            <option value="" disabled>Select your Hospital</option>
+                                            {hospitals.map(h => (
+                                                <option key={h._id} value={h._id}>{h.name}</option>
+                                            ))}
+                                        </select>
+                                        {hospitals.length === 0 && (
+                                            <p className="text-xs text-amber-600">No verified hospitals available yet.</p>
+                                        )}
+                                    </div>
+                                </>
                             )}
 
                             {role === "hospital" && (

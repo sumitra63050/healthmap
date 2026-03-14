@@ -1,6 +1,6 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { Activity, UploadCloud, File, X, CheckCircle, Hospital, LogOut } from "lucide-react"
+import { UploadCloud, File, X, CheckCircle, Hospital, LogOut, BriefcaseMedical, XCircle } from "lucide-react"
 import API from "../services/api"
 
 export default function HospitalUpload() {
@@ -10,9 +10,53 @@ export default function HospitalUpload() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
     const [success, setSuccess] = useState(false)
+    const [pendingDoctors, setPendingDoctors] = useState([])
     const fileInputRef = useRef(null)
 
     const hospitalName = localStorage.getItem("userName") || "Hospital"
+
+    useEffect(() => {
+        fetchPendingDoctors()
+    }, [])
+
+    const fetchPendingDoctors = async () => {
+        try {
+            const token = localStorage.getItem("token")
+            const res = await API.get("/hospital/pending-doctors", {
+                headers: { Authorization: token }
+            })
+            setPendingDoctors(res.data.doctors || [])
+        } catch (err) {
+            console.error("Failed to fetch pending doctors")
+        }
+    }
+
+    const verifyDoctor = async (id) => {
+        if (!window.confirm("Are you sure you want to approve this doctor?")) return;
+        try {
+            const token = localStorage.getItem("token")
+            await API.put("/hospital/verify-doctor", { id }, {
+                headers: { Authorization: token }
+            })
+            fetchPendingDoctors()
+        } catch (err) {
+            alert(err.response?.data?.error || "Failed to verify doctor")
+        }
+    }
+
+    const rejectDoctor = async (id) => {
+        if (!window.confirm("Are you sure you want to reject this doctor? This cannot be undone.")) return;
+        try {
+            const token = localStorage.getItem("token")
+            await API.delete("/hospital/reject-doctor", {
+                data: { id },
+                headers: { Authorization: token }
+            })
+            fetchPendingDoctors()
+        } catch (err) {
+            alert(err.response?.data?.error || "Failed to reject doctor")
+        }
+    }
 
     const logout = () => {
         localStorage.clear()
@@ -69,7 +113,7 @@ export default function HospitalUpload() {
             <nav className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 sticky top-0 z-10 shadow-sm">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                        <Activity className="h-6 w-6 sm:h-7 sm:w-7 text-indigo-600" />
+                        <img src="/logo.png" alt="HealthMap Logo" className="h-8 w-auto sm:h-9" />
                         <span className="text-lg sm:text-xl font-bold text-indigo-900">HealthMap Portal</span>
                     </Link>
                     <div className="flex items-center gap-4">
@@ -188,6 +232,46 @@ export default function HospitalUpload() {
                     </div>
                 </div>
             </main>
+
+            {/* Pending Doctors Section */}
+            <section className="max-w-4xl mx-auto px-4 pb-12">
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+                    <div className="bg-indigo-50 px-6 py-5 border-b border-indigo-100">
+                        <h2 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
+                            <BriefcaseMedical className="h-5 w-5 text-indigo-600" />
+                            Pending Doctor Approvals ({pendingDoctors.length})
+                        </h2>
+                        <p className="text-sm text-indigo-700 mt-1">Review and approve doctor registration requests.</p>
+                    </div>
+
+                    {pendingDoctors.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500">
+                            No pending doctor verifications.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+                            {pendingDoctors.map(doctor => (
+                                <div key={doctor._id} className="bg-slate-50 p-5 rounded-xl border border-slate-200 hover:shadow-md transition-shadow">
+                                    <h3 className="text-lg font-bold text-slate-800">{doctor.name}</h3>
+                                    <p className="text-slate-500 text-sm mb-3">{doctor.email}</p>
+                                    <div className="bg-indigo-50 p-3 rounded-lg mb-4">
+                                        <p className="text-xs text-indigo-800 font-semibold mb-1">Medical License Number</p>
+                                        <p className="font-mono text-indigo-900 text-sm break-all">{doctor.licenseNumber}</p>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <button onClick={() => verifyDoctor(doctor._id)} className="flex-1 px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-medium text-sm flex items-center justify-center gap-1 transition-colors">
+                                            <CheckCircle className="h-4 w-4" /> Approve
+                                        </button>
+                                        <button onClick={() => rejectDoctor(doctor._id)} className="flex-1 px-4 py-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl font-medium text-sm flex items-center justify-center gap-1 transition-colors">
+                                            <XCircle className="h-4 w-4" /> Reject
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </section>
         </div>
     )
 }

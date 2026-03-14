@@ -6,6 +6,7 @@ const doctorSchema = new mongoose.Schema({
     password: { type: String, required: true },
     doctorId: { type: String, unique: true },
     licenseNumber: { type: String, required: true, unique: true },
+    hospitalId: { type: mongoose.Schema.Types.ObjectId, ref: "Hospital", required: true },
     isVerified: { type: Boolean, default: false }
 }, { timestamps: true })
 

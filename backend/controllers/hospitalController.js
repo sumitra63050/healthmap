@@ -52,3 +52,40 @@ exports.uploadHospitalReport = async (req, res) => {
     }
 
 }
+
+const Doctor = require("../models/Doctor")
+
+exports.getPendingDoctors = async (req, res) => {
+    try {
+        const pendingDoctors = await Doctor.find({ isVerified: false, hospitalId: req.user.id }).select("-password");
+        res.json({ doctors: pendingDoctors });
+    } catch (err) {
+        res.status(500).json({ error: err.message || "Server Error" });
+    }
+};
+
+exports.verifyDoctor = async (req, res) => {
+    try {
+        const { id } = req.body;
+        const doctor = await Doctor.findById(id);
+        if (!doctor) return res.status(404).json({ error: "Doctor not found" });
+
+        await Doctor.findByIdAndUpdate(id, { isVerified: true });
+        res.json({ message: "Doctor verified successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message || "Server Error" });
+    }
+};
+
+exports.rejectDoctor = async (req, res) => {
+    try {
+        const { id } = req.body;
+        const doctor = await Doctor.findById(id);
+        if (!doctor) return res.status(404).json({ error: "Doctor not found" });
+
+        await Doctor.findByIdAndDelete(id);
+        res.json({ message: "Doctor application rejected" });
+    } catch (err) {
+        res.status(500).json({ error: err.message || "Server Error" });
+    }
+};

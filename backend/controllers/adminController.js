@@ -23,10 +23,9 @@ exports.adminLogin = async (req, res) => {
 
 exports.getPendingUsers = async (req, res) => {
     try {
-        const pendingDoctors = await Doctor.find({ isVerified: false }).select("-password");
         const pendingHospitals = await Hospital.find({ isVerified: false }).select("-password");
         
-        res.json({ doctors: pendingDoctors, hospitals: pendingHospitals });
+        res.json({ hospitals: pendingHospitals });
     } catch (err) {
         res.status(500).json({ error: err.message || "Server Error" });
     }
@@ -34,11 +33,9 @@ exports.getPendingUsers = async (req, res) => {
 
 exports.verifyUser = async (req, res) => {
     try {
-        const { type, id } = req.body; // type is 'doctor' or 'hospital'
+        const { type, id } = req.body; // type is 'hospital'
         
-        if (type === 'doctor') {
-            await Doctor.findByIdAndUpdate(id, { isVerified: true });
-        } else if (type === 'hospital') {
+        if (type === 'hospital') {
             await Hospital.findByIdAndUpdate(id, { isVerified: true });
         } else {
             return res.status(400).json({ error: "Invalid type" });
@@ -53,9 +50,7 @@ exports.rejectUser = async (req, res) => {
     try {
         const { type, id } = req.body; 
         
-        if (type === 'doctor') {
-            await Doctor.findByIdAndDelete(id);
-        } else if (type === 'hospital') {
+        if (type === 'hospital') {
             await Hospital.findByIdAndDelete(id);
         } else {
             return res.status(400).json({ error: "Invalid type" });

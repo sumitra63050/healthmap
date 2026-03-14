@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { Activity, Mail, Lock, ArrowRight } from "lucide-react"
+import { Mail, Lock, ArrowRight } from "lucide-react"
 import API from "../services/api"
 
 export default function Login() {
@@ -46,7 +46,7 @@ export default function Login() {
                 <div className="p-8">
                     <div className="flex justify-center mb-8">
                         <Link to="/" className="flex items-center gap-2">
-                            <Activity className="h-8 w-8 text-teal-600" />
+                            <img src="/logo.png" alt="HealthMap Logo" className="h-10 w-auto" />
                             <span className="text-2xl font-bold text-teal-900">HealthMap</span>
                         </Link>
                     </div>

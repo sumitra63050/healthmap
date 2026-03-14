@@ -6,6 +6,10 @@ const patientSchema = new mongoose.Schema({
     password: String,
     medicalId: { type: String, unique: true },
     doctorAccessCode: String,
+    dob: Date,
+    gender: String,
+    bloodGroup: String,
+    aadhaarNumber: { type: String, unique: true },
     reports: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Report"

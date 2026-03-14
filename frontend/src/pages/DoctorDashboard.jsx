@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { Activity, Search, FileText, Calendar, User, CheckCircle, LogOut } from "lucide-react"
+import { Search, FileText, Calendar, User, CheckCircle, LogOut } from "lucide-react"
 import API from "../services/api"
 
 export default function DoctorDashboard() {
@@ -54,7 +54,7 @@ export default function DoctorDashboard() {
             <nav className="bg-white border-b border-slate-200 px-8 py-4 sticky top-0 z-10 shadow-sm">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                        <Activity className="h-7 w-7 text-indigo-600" />
+                        <img src="/logo.png" alt="HealthMap Logo" className="h-8 w-auto" />
                         <span className="text-xl font-bold text-indigo-900">HealthMap Portal</span>
                     </Link>
                     <div className="flex items-center gap-4">
