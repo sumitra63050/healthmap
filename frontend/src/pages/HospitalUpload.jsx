@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { UploadCloud, File, X, CheckCircle, Hospital, LogOut, BriefcaseMedical, XCircle } from "lucide-react"
+import { Activity, UploadCloud, File, X, CheckCircle, Hospital, LogOut, BriefcaseMedical, XCircle, FileText, Trash2, Eye, User, ChevronDown, ChevronUp, Shield } from "lucide-react"
 import API from "../services/api"
 
 export default function HospitalUpload() {
@@ -11,9 +12,76 @@ export default function HospitalUpload() {
     const [error, setError] = useState("")
     const [success, setSuccess] = useState(false)
     const [pendingDoctors, setPendingDoctors] = useState([])
+    const [patients, setPatients] = useState([])
+    const [expandedPatient, setExpandedPatient] = useState(null)
     const fileInputRef = useRef(null)
 
     const hospitalName = localStorage.getItem("userName") || "Hospital"
+    const token = localStorage.getItem("token")
+
+    useEffect(() => {
+        fetchPendingDoctors()
+        fetchHospitalReports()
+    }, [])
+
+    const fetchPendingDoctors = async () => {
+        try {
+            const res = await API.get("/hospital/pending-doctors", {
+                headers: { Authorization: token }
+            })
+            setPendingDoctors(res.data.doctors || [])
+        } catch (err) {
+            console.error("Failed to fetch pending doctors")
+        }
+    }
+
+    const fetchHospitalReports = async () => {
+        try {
+            const res = await API.get("/hospital/my-reports", {
+                headers: { Authorization: token }
+            })
+            setPatients(res.data.patients || [])
+        } catch (err) {
+            console.error("Failed to fetch hospital reports")
+        }
+    }
+
+    const verifyDoctor = async (id) => {
+        if (!window.confirm("Are you sure you want to approve this doctor?")) return;
+        try {
+            await API.put("/hospital/verify-doctor", { id }, {
+                headers: { Authorization: token }
+            })
+            fetchPendingDoctors()
+        } catch (err) {
+            alert(err.response?.data?.error || "Failed to verify doctor")
+        }
+    }
+
+    const rejectDoctor = async (id) => {
+        if (!window.confirm("Are you sure you want to reject this doctor? This cannot be undone.")) return;
+        try {
+            await API.delete("/hospital/reject-doctor", {
+                data: { id },
+                headers: { Authorization: token }
+            })
+            fetchPendingDoctors()
+        } catch (err) {
+            alert(err.response?.data?.error || "Failed to reject doctor")
+        }
+    }
+
+    const deleteReport = async (reportId) => {
+        if (!window.confirm("Are you sure you want to delete this report? This cannot be undone.")) return;
+        try {
+            await API.delete(`/hospital/report/${reportId}`, {
+                headers: { Authorization: token }
+            })
+            fetchHospitalReports()
+        } catch (err) {
+            alert(err.response?.data?.error || "Failed to delete report")
+        }
+    }
 
     useEffect(() => {
         fetchPendingDoctors()
@@ -94,8 +162,11 @@ export default function HospitalUpload() {
         formData.append("reportType", reportType)
 
         try {
-            await API.post("/hospital/upload", formData)
+            await API.post("/hospital/upload", formData, {
+                headers: { Authorization: token }
+            })
             setSuccess(true)
+            fetchHospitalReports()
             setTimeout(() => {
                 setSuccess(false)
                 setMedicalId("")
@@ -106,6 +177,10 @@ export default function HospitalUpload() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const togglePatient = (pid) => {
+        setExpandedPatient(expandedPatient === pid ? null : pid)
     }
 
     return (
@@ -232,6 +307,114 @@ export default function HospitalUpload() {
                     </div>
                 </div>
             </main>
+
+            {/* Uploaded Patient Reports Section */}
+            <section className="max-w-4xl mx-auto px-4 pb-12">
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+                    <div className="bg-emerald-50 px-6 py-5 border-b border-emerald-100">
+                        <h2 className="text-xl font-bold text-emerald-900 flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-emerald-600" />
+                            Uploaded Patient Reports ({patients.length} patients)
+                        </h2>
+                        <p className="text-sm text-emerald-700 mt-1">View and manage reports you've uploaded for patients. Delete option is available until a doctor verifies the report.</p>
+                    </div>
+
+                    {patients.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500">
+                            No reports uploaded yet. Upload a report above to see patient details here.
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-slate-100">
+                            {patients.map(patient => (
+                                <div key={patient.patientId} className="transition-colors">
+                                    {/* Patient Header Card */}
+                                    <div
+                                        className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                                        onClick={() => togglePatient(patient.patientId)}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-12 w-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                                                <User className="h-6 w-6" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-slate-800">{patient.name}</h3>
+                                                <div className="flex flex-wrap items-center gap-3 mt-1">
+                                                    <span className="text-xs font-mono font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
+                                                        {patient.medicalId}
+                                                    </span>
+                                                    <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded capitalize">
+                                                        {patient.gender || "N/A"}
+                                                    </span>
+                                                    <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                                                        {patient.reports.length} report{patient.reports.length !== 1 ? 's' : ''}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button className="flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors px-3 py-2 rounded-lg hover:bg-indigo-50">
+                                            <Eye className="h-4 w-4" />
+                                            {expandedPatient === patient.patientId ? "Hide" : "View"} Reports
+                                            {expandedPatient === patient.patientId ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                        </button>
+                                    </div>
+
+                                    {/* Expanded Reports */}
+                                    {expandedPatient === patient.patientId && (
+                                        <div className="bg-slate-50 px-5 pb-5 border-t border-slate-100">
+                                            <div className="space-y-3 pt-4">
+                                                {patient.reports.map(report => (
+                                                    <div key={report._id} className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:shadow-sm transition-shadow">
+                                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                            <div className="h-10 w-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                                                                <FileText className="h-5 w-5" />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <h4 className="text-sm font-semibold text-slate-800 flex flex-wrap items-center gap-2">
+                                                                    {report.reportType || "General Report"}
+                                                                    {report.verified ? (
+                                                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                                                                            <Shield className="h-3 w-3" /> Verified by Dr. {report.verifiedByDoctor?.replace(/^Dr\.\s*/i, '')}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                                                                            Pending Verification
+                                                                        </span>
+                                                                    )}
+                                                                </h4>
+                                                                <p className="text-xs text-slate-500 mt-0.5">
+                                                                    Uploaded on {new Date(report.createdAt).toLocaleDateString()} at {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+                                                            <a
+                                                                href={report.fileUrl}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="flex-1 sm:flex-none px-4 py-2 border border-slate-200 bg-white text-slate-700 hover:text-indigo-700 hover:border-indigo-300 rounded-lg text-sm font-medium transition-all text-center flex items-center justify-center gap-1"
+                                                            >
+                                                                <Eye className="h-4 w-4" /> View
+                                                            </a>
+                                                            {!report.verified && (
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); deleteReport(report._id); }}
+                                                                    className="flex-1 sm:flex-none px-4 py-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-sm font-medium transition-all text-center flex items-center justify-center gap-1"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" /> Delete
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </section>
 
             {/* Pending Doctors Section */}
             <section className="max-w-4xl mx-auto px-4 pb-12">

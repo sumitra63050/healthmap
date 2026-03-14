@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { User, Mail, Lock, CheckCircle, BriefcaseMedical, Building2 } from "lucide-react"
+import { Activity, User, Mail, Lock, CheckCircle, BriefcaseMedical, Building2 } from "lucide-react"
 import API from "../services/api"
 
 export default function Register() {

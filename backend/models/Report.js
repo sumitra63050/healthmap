@@ -6,6 +6,10 @@ const reportSchema = new mongoose.Schema({
         ref: "Patient"
     },
     uploadedBy: String,
+    uploadedByHospitalId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Hospital"
+    },
     fileUrl: String,
     reportType: String,
     verified: {
