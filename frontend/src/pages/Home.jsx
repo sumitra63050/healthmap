@@ -1,15 +1,16 @@
 import { Link } from "react-router-dom"
-import { Activity, Shield, Users, FileText, Lock, Clock, Stethoscope, Building2, ChevronRight, CheckCircle2 } from "lucide-react"
+import { Shield, Users, FileText, Lock, Clock, Stethoscope, Building2, ChevronRight, CheckCircle2 } from "lucide-react"
+import logo from "../assets/logo.png"
 
 export default function Home() {
     return (
         <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col">
             {/* Navbar */}
             <nav className="flex flex-wrap items-center justify-between px-6 md:px-12 py-4 md:py-6 max-w-7xl mx-auto w-full sticky top-0 bg-slate-50/80 backdrop-blur-md z-50 border-b border-transparent transition-all gap-4">
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start">
-                    <Activity className="h-8 w-8 text-teal-600" />
+                <Link to="/" className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start hover:opacity-90 transition-opacity">
+                    <img src={logo} alt="HealthMap Logo" className="h-10 w-10 object-contain" />
                     <span className="text-2xl font-bold tracking-tight text-teal-900">HealthMap</span>
-                </div>
+                </Link>
                 <div className="flex gap-2 sm:gap-4 items-center w-full sm:w-auto justify-center sm:justify-end">
                     <Link to="/login" className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:text-teal-700 transition-colors">
                         Sign In
@@ -127,12 +128,14 @@ export default function Home() {
                                     desc: "When visiting a specialist, share your Doctor Access Code so they can view your full history."
                                 }
                             ].map((item, idx) => (
-                                <div key={idx} className="relative">
-                                    <div className="h-24 w-24 bg-slate-800 border-2 border-teal-500 rounded-full flex items-center justify-center text-3xl font-bold text-teal-400 mb-6 shadow-[0_0_30px_rgba(20,184,166,0.2)]">
+                                <div key={idx} className="relative flex flex-col items-center text-center">
+                                    <div className="h-24 w-24 bg-slate-800 border-2 border-teal-500 rounded-full flex items-center justify-center text-3xl font-bold text-teal-400 mb-6 shadow-[0_0_30px_rgba(20,184,166,0.2)] hover:scale-110 transition-transform z-10">
                                         {item.step}
                                     </div>
-                                    <h3 className="text-2xl font-bold mb-4">{item.title}</h3>
-                                    <p className="text-slate-400 text-lg leading-relaxed">{item.desc}</p>
+                                    <div className="flex flex-col items-center">
+                                        <h3 className="text-2xl font-bold mb-4 text-white text-center">{item.title}</h3>
+                                        <p className="text-slate-400 text-lg leading-relaxed max-w-[280px] text-center mx-auto">{item.desc}</p>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -142,7 +145,7 @@ export default function Home() {
                 {/* Call to Action */}
                 <section className="py-24 bg-white text-center px-6">
                     <div className="max-w-3xl mx-auto flex flex-col items-center">
-                        <Activity className="h-16 w-16 text-teal-600 mb-6" />
+                        <img src={logo} alt="HealthMap Logo" className="h-20 w-20 object-contain mb-6" />
                         <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-6">Ready to digitize your health?</h2>
                         <p className="text-xl text-slate-600 mb-10">Join thousands of patients who are managing their health records securely and easily.</p>
                         <Link to="/register" className="px-8 py-4 text-lg font-medium bg-slate-900 text-white rounded-full shadow-xl hover:bg-slate-800 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex items-center gap-2">
@@ -161,7 +164,7 @@ export default function Home() {
             <footer className="bg-white border-t border-slate-200 py-8">
                 <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
-                        <Activity className="h-5 w-5 text-teal-600" />
+                        <img src={logo} alt="HealthMap Logo" className="h-6 w-6 object-contain" />
                         <span className="text-lg font-bold text-slate-800">HealthMap</span>
                     </div>
                     <div className="text-sm text-slate-500">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import { Activity, User, Mail, Lock, CheckCircle, BriefcaseMedical, Building2 } from "lucide-react"
+import { User, Mail, Lock, CheckCircle, BriefcaseMedical, Building2 } from "lucide-react"
+import logo from "../assets/logo.png"
 import API from "../services/api"
 
 export default function Register() {
@@ -69,8 +70,8 @@ export default function Register() {
             <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300">
                 <div className="p-8">
                     <div className="flex justify-center mb-8">
-                        <Link to="/" className="flex items-center gap-2">
-                            <Activity className="h-8 w-8 text-teal-600" />
+                        <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+                            <img src={logo} alt="HealthMap Logo" className="h-10 w-10 object-contain" />
                             <span className="text-2xl font-bold text-teal-900">HealthMap</span>
                         </Link>
                     </div>

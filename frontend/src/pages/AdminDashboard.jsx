@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Shield, CheckCircle, XCircle, LogOut, Search, User, BriefcaseMedical, Building2, FileText, Activity } from "lucide-react"
+import { Shield, CheckCircle, XCircle, LogOut, Search, User, BriefcaseMedical, Building2, FileText } from "lucide-react"
+import logo from "../assets/logo.png"
 import API from "../services/api"
 
 export default function AdminDashboard() {
@@ -61,7 +62,7 @@ export default function AdminDashboard() {
     if (loading) {
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-                <Shield className="h-10 w-10 text-slate-800 animate-pulse" />
+                <img src={logo} alt="Loading..." className="h-10 w-10 object-contain animate-pulse" />
             </div>
         )
     }
@@ -71,10 +72,10 @@ export default function AdminDashboard() {
             {/* Top Navigation */}
             <nav className="bg-white border-b border-slate-200 px-8 py-4 sticky top-0 z-10 shadow-sm">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Activity className="h-7 w-7 text-teal-600" />
+                    <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+                        <img src={logo} alt="HealthMap Logo" className="h-8 w-8 object-contain" />
                         <span className="text-xl font-bold text-teal-900">HealthMap Admin</span>
-                    </div>
+                    </Link>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg">
                             <Shield className="h-4 w-4" /> Administrator

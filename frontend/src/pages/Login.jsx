@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { Activity, Mail, Lock, ArrowRight } from "lucide-react"
+import { Mail, Lock, ArrowRight } from "lucide-react"
+import logo from "../assets/logo.png"
 import API from "../services/api"
 
 export default function Login() {
@@ -45,8 +46,8 @@ export default function Login() {
             <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
                 <div className="p-8">
                     <div className="flex justify-center mb-8">
-                        <Link to="/" className="flex items-center gap-2">
-                            <Activity className="h-8 w-8 text-teal-600" />
+                        <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+                            <img src={logo} alt="HealthMap Logo" className="h-10 w-10 object-contain" />
                             <span className="text-2xl font-bold text-teal-900">HealthMap</span>
                         </Link>
                     </div>

@@ -1,6 +1,7 @@
 import { useState, useRef } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Activity, UploadCloud, File, X, CheckCircle, User, ArrowLeft } from "lucide-react"
+import { UploadCloud, File, X, CheckCircle, User, ArrowLeft } from "lucide-react"
+import logo from "../assets/logo.png"
 import API from "../services/api"
 
 export default function UploadReport() {
@@ -71,8 +72,8 @@ export default function UploadReport() {
         <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
             <nav className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 sticky top-0 z-10 shadow-sm">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                        <Activity className="h-6 w-6 sm:h-7 sm:w-7 text-teal-600" />
+                    <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+                        <img src={logo} alt="HealthMap Logo" className="h-8 w-8 object-contain" />
                         <span className="text-lg sm:text-xl font-bold text-teal-900">HealthMap Portal</span>
                     </Link>
                     <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-600 bg-slate-100 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg">
@@ -89,7 +90,7 @@ export default function UploadReport() {
 
                 <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
                     <div className="bg-teal-600 px-8 py-10 text-center">
-                        <UploadCloud className="h-12 w-12 text-teal-100 mx-auto mb-4" />
+                        <img src={logo} alt="Upload Logo" className="h-16 w-16 object-contain mx-auto mb-4" />
                         <h1 className="text-3xl font-bold text-white mb-2">Upload Personal Report</h1>
                         <p className="text-teal-100">Add past medical records to your profile securely.</p>
                     </div>

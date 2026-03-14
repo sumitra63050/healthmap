@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { Activity, UploadCloud, File, X, CheckCircle, Hospital, LogOut, BriefcaseMedical, XCircle, FileText, Trash2, Eye, User, ChevronDown, ChevronUp, Shield } from "lucide-react"
+import { UploadCloud, File, X, CheckCircle, Hospital, LogOut, BriefcaseMedical, XCircle, FileText, Trash2, Eye, User, ChevronDown, ChevronUp, Shield } from "lucide-react"
+import logo from "../assets/logo.png"
 import API from "../services/api"
 
 export default function HospitalUpload() {
@@ -143,8 +144,8 @@ export default function HospitalUpload() {
         <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
             <nav className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 sticky top-0 z-10 shadow-sm">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                        <Activity className="h-6 w-6 sm:h-7 sm:w-7 text-indigo-600" />
+                    <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+                        <img src={logo} alt="HealthMap Logo" className="h-8 w-8 object-contain" />
                         <span className="text-lg sm:text-xl font-bold text-indigo-900">HealthMap Portal</span>
                     </Link>
                     <div className="flex items-center gap-4">
@@ -162,7 +163,7 @@ export default function HospitalUpload() {
             <main className="max-w-2xl mx-auto px-4 py-12">
                 <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
                     <div className="bg-indigo-600 px-8 py-10 text-center">
-                        <UploadCloud className="h-12 w-12 text-indigo-100 mx-auto mb-4" />
+                        <img src={logo} alt="Upload Logo" className="h-16 w-16 object-contain mx-auto mb-4" />
                         <h1 className="text-3xl font-bold text-white mb-2">Welcome, {hospitalName}</h1>
                         <p className="text-indigo-100">Securely upload medical reports to patient profiles using their Medical ID.</p>
                     </div>
