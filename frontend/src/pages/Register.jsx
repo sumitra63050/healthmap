@@ -68,10 +68,11 @@ export default function Register() {
             const res = await API.post("/auth/register", payload)
 
             if (res.data.token) {
-                // Auto login for patients
+                // Auto login for patients and hospitals
                 localStorage.clear()
                 localStorage.setItem("token", res.data.token)
                 localStorage.setItem("role", res.data.role)
+                localStorage.setItem("userRole", res.data.role)
                 if (res.data.user && res.data.user.name) {
                     localStorage.setItem("userName", res.data.user.name)
                 }
@@ -79,6 +80,10 @@ export default function Register() {
                 // Redirect based on role
                 if (res.data.role === 'patient') {
                     window.location = "/patient"
+                    return
+                }
+                if (res.data.role === 'hospital') {
+                    window.location = "/hospital"
                     return
                 }
             }
@@ -272,7 +277,7 @@ export default function Register() {
                                                 className="block w-full px-3 py-3 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow"
                                                 placeholder="12 digit Aadhaar Number"
                                                 value={aadhaarNumber}
-                                                onChange={e => setAadhaarNumber(e.target.value)}
+                                                onChange={e => setAadhaarNumber(e.target.value.replace(/[^0-9]/g, ""))}
                                             />
                                         </div>
                                     </div>
@@ -287,7 +292,7 @@ export default function Register() {
                                                 className="block w-full px-3 py-3 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow"
                                                 placeholder="10 digit Phone Number"
                                                 value={phoneNumber}
-                                                onChange={e => setPhoneNumber(e.target.value)}
+                                                onChange={e => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ""))}
                                             />
                                         </div>
                                     </div>
@@ -352,7 +357,7 @@ export default function Register() {
                                                 className="block w-full px-3 py-3 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow"
                                                 placeholder="10 digit Phone Number"
                                                 value={phoneNumber}
-                                                onChange={e => setPhoneNumber(e.target.value)}
+                                                onChange={e => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ""))}
                                             />
                                         </div>
                                     </div>

@@ -1,19 +1,30 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { LogOut, FileText, Upload, User, Key, Calendar, RefreshCw, Trash2, CheckCircle, Bell } from "lucide-react"
-import logo from "../assets/logo.png"
+import { 
+    LayoutDashboard, 
+    FileText, 
+    Upload, 
+    User, 
+    Key, 
+    Calendar, 
+    RefreshCw, 
+    Trash2, 
+    CheckCircle, 
+    Search,
+    ShieldCheck,
+    ArrowRight // Added ArrowRight for the new card
+} from "lucide-react"
 import API from "../services/api"
 
 export default function PatientDashboard() {
     const [data, setData] = useState(null)
     const [loading, setLoading] = useState(true)
     const [regenerating, setRegenerating] = useState(false)
-    const [notifications, setNotifications] = useState([])
-    const [unreadCount, setUnreadCount] = useState(0)
     const [error, setError] = useState(null)
     const [deletingId, setDeletingId] = useState(null)
     const [activeTab, setActiveTab] = useState("all") // all, hospital, patient
     const [reportTypeFilter, setReportTypeFilter] = useState("All Types")
+    const [searchTerm, setSearchTerm] = useState("")
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -29,12 +40,6 @@ export default function PatientDashboard() {
                     headers: { Authorization: token }
                 })
                 setData(dashboardRes.data)
-
-                const notifyRes = await API.get("/patient/notifications", {
-                    headers: { Authorization: token }
-                })
-                setNotifications(notifyRes.data.notifications)
-                setUnreadCount(notifyRes.data.notifications.filter(n => !n.isRead).length)
             } catch (err) {
                 setError("Failed to load dashboard. Please log in again.")
                 if (err.response?.status === 401 || err.response?.status === 403) {
@@ -47,11 +52,6 @@ export default function PatientDashboard() {
         }
         fetchData()
     }, [navigate])
-
-    const logout = () => {
-        localStorage.clear()
-        navigate("/login")
-    }
 
     const regenerateAccessCode = async () => {
         try {
@@ -93,123 +93,139 @@ export default function PatientDashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <img src={logo} alt="Loading..." className="h-10 w-10 object-contain animate-pulse" />
-                    <p className="text-teal-900 font-medium">Loading your portal...</p>
-                </div>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+                <div className="h-12 w-12 border-4 border-teal-600/20 border-t-teal-600 rounded-full animate-spin"></div>
+                <p className="text-slate-500 font-medium animate-pulse">Loading dashboard records...</p>
             </div>
         )
     }
 
     if (error) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center p-4">
-                <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center space-y-4">
-                    <p className="text-red-600">{error}</p>
-                    <button onClick={() => navigate("/login")} className="px-6 py-2 bg-teal-600 text-white rounded-xl shadow-sm hover:bg-teal-700 transition">
-                        Go to Login
-                    </button>
-                </div>
+            <div className="bg-red-50 p-8 rounded-2xl border border-red-100 text-center max-w-md mx-auto my-12">
+                <p className="text-red-600 font-semibold mb-4">{error}</p>
+                <button onClick={() => navigate("/login")} className="px-6 py-2 bg-red-600 text-white rounded-xl shadow-md hover:bg-red-700 transition-all">
+                    Back to Login
+                </button>
             </div>
         )
     }
 
+    const filteredReports = data.reports?.filter(report => {
+        const isHospital = report.uploadedBy !== "patient";
+        const matchesTab = activeTab === "all" || (activeTab === "hospital" && isHospital) || (activeTab === "patient" && !isHospital);
+        const matchesType = reportTypeFilter === "All Types" || (report.reportType || "General Report") === reportTypeFilter;
+        const matchesSearch = !searchTerm || 
+            (report.reportType || "General Report").toLowerCase().includes(searchTerm.toLowerCase()) || 
+            (report.uploadedBy || "").toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesTab && matchesType && matchesSearch;
+    });
+
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
-            {/* Top Navigation */}
-            <nav className="bg-white border-b border-slate-200 px-8 py-4 sticky top-0 z-10 shadow-sm">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-                        <img src={logo} alt="HealthMap Logo" className="h-8 w-8 object-contain" />
-                        <span className="text-xl font-bold text-teal-900">HEALTHMAP</span>
-                    </Link>
-                    <div className="flex items-center gap-4">
-                        <Link to="/notifications" className="relative p-2 text-slate-500 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all" title="Notifications">
-                            <Bell className="h-5 w-5" />
-                            {unreadCount > 0 && (
-                                <span className="absolute top-1.5 right-1.5 h-4 w-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full ring-2 ring-white">
-                                    {unreadCount}
-                                </span>
-                            )}
-                        </Link>
-                        <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg">
-                            <User className="h-4 w-4" />
-                            {data.name} {data.gender ? `(${data.gender})` : ''}
-                        </div>
-                        <button onClick={logout} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors" title="Logout">
-                            <LogOut className="h-5 w-5" />
-                        </button>
+        <div className="animate-fade-in space-y-8 pb-12">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <div className="flex items-center gap-2 text-slate-400 mb-1">
+                        <LayoutDashboard className="h-4 w-4" />
+                        <span className="text-xs font-bold uppercase tracking-widest">Dashboard</span>
                     </div>
+                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Patient Dashboard</h1>
+                    <p className="text-slate-500 font-medium">Welcome back, <span className="text-teal-600">{data.name.split(' ')[0]}</span></p>
                 </div>
-            </nav>
+                <Link 
+                    to="/upload-report" 
+                    className="flex items-center justify-center gap-2 bg-teal-600 text-white px-5 py-3 rounded-xl font-bold shadow-lg shadow-teal-100 hover:bg-teal-700 transition-all text-sm w-full md:w-auto"
+                >
+                    <Upload className="h-4 w-4" />
+                    Upload New Report
+                </Link>
+            </div>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-8 py-10 space-y-8">
-                {/* Header Section */}
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-slate-900">Patient Dashboard</h1>
-                        <p className="text-slate-500 mt-1">Manage your health records safely and securely.</p>
+            {/* Identifiers Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Medical ID Card */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-teal-600 to-teal-800 p-8 rounded-[2rem] shadow-xl shadow-teal-100 text-white group">
+                    <div className="relative z-10">
+                        <p className="text-teal-100/80 text-sm font-bold uppercase tracking-wider mb-2">Medical ID Space</p>
+                        <h2 className="text-4xl font-black tracking-tight mb-6">{data.medicalId}</h2>
+                        <p className="text-teal-50/70 text-sm font-medium leading-relaxed max-w-[280px]">
+                            Give this ID to hospital staff when getting tested.
+                        </p>
                     </div>
-                    <Link to="/upload-report" className="px-4 py-2.5 bg-teal-600 text-white font-medium rounded-xl shadow-sm hover:bg-teal-700 hover:shadow-md transition-all flex items-center gap-2">
-                        <Upload className="h-4 w-4" />
-                        Upload New Report
-                    </Link>
+                    {/* Decorative Elements */}
+                    <div className="absolute top-8 right-8 p-3 bg-white/10 rounded-2xl backdrop-blur-md">
+                        <ShieldCheck className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="absolute -bottom-12 -right-12 h-64 w-64 bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-colors duration-700"></div>
                 </div>
 
-                {/* Identity Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-gradient-to-br from-teal-500 to-teal-700 p-6 rounded-2xl shadow-md text-white">
-                        <div className="flex justify-between items-start mb-4">
-                            <div>
-                                <p className="text-teal-100 text-sm font-medium mb-1">Medical ID Space</p>
-                                <h3 className="text-2xl font-bold tracking-tight">{data.medicalId || "Not Assigned"}</h3>
-                            </div>
-                            <div className="p-2 bg-white/20 rounded-xl">
-                                <img src={logo} alt="Icon" className="h-6 w-6 object-contain brightness-0 invert" />
-                            </div>
+                {/* Access Code Card */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-[2rem] shadow-xl shadow-indigo-100 text-white group">
+                    <div className="relative z-10">
+                        <p className="text-indigo-100/80 text-sm font-bold uppercase tracking-wider mb-2">Doctor Access Code</p>
+                        <div className="flex flex-wrap items-center gap-4 mb-6">
+                            <h2 className="text-4xl font-black tracking-tight">{data.doctorAccessCode}</h2>
+                            <button
+                                onClick={regenerateAccessCode}
+                                disabled={regenerating}
+                                className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl backdrop-blur-md transition-all font-bold text-xs disabled:opacity-50"
+                            >
+                                <RefreshCw className={`h-3 w-3 ${regenerating ? 'animate-spin' : ''}`} />
+                                {regenerating ? 'Regenerating...' : 'Regenerate'}
+                            </button>
                         </div>
-                        <p className="text-teal-50 text-sm opacity-90">Give this ID to hospital staff when getting tested.</p>
+                        <p className="text-indigo-50/70 text-sm font-medium leading-relaxed max-w-[280px]">
+                            Share this code with your doctor for report access.
+                        </p>
                     </div>
+                    {/* Decorative Elements */}
+                    <div className="absolute top-8 right-8 p-3 bg-white/10 rounded-2xl backdrop-blur-md">
+                        <Key className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="absolute -bottom-12 -right-12 h-64 w-64 bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-colors duration-700"></div>
+                </div>
+            </div>
 
-                    <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-2xl shadow-md text-white">
-                        <div className="flex justify-between items-start mb-4">
+            {/* Reports Section */}
+            <div className="bg-white border border-slate-200 rounded-[2rem] shadow-sm overflow-hidden border-b-4 border-b-teal-600/10">
+                <div className="p-8 pb-4 border-b border-slate-100 space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 bg-teal-50 rounded-xl flex items-center justify-center">
+                                <FileText className="h-5 w-5 text-teal-600" />
+                            </div>
                             <div>
-                                <p className="text-blue-100 text-sm font-medium mb-1">Doctor Access Code</p>
-                                <div className="flex flex-col sm:flex-row items-baseline sm:items-center gap-3 mt-1">
-                                    <h3 className="text-2xl font-bold tracking-tight">{data.doctorAccessCode || "Not Assigned"}</h3>
-                                    <button
-                                        onClick={regenerateAccessCode}
-                                        disabled={regenerating}
-                                        className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title="Regenerate Access Code"
+                                <h3 className="text-xl font-bold text-slate-900 tracking-tight">Your Medical Reports</h3>
+                                <div className="flex items-center gap-3">
+                                    <p className="text-xs font-bold text-teal-600 uppercase tracking-widest">{filteredReports?.length || 0} Total Records</p>
+                                    <span className="text-slate-200">|</span>
+                                    <button 
+                                        onClick={() => navigate("/reports")}
+                                        className="text-[10px] font-black text-slate-400 hover:text-teal-600 uppercase tracking-widest transition-colors flex items-center gap-1"
                                     >
-                                        <RefreshCw className={`h-3.5 w-3.5 ${regenerating ? 'animate-spin' : ''}`} />
-                                        {regenerating ? 'Generating...' : 'Regenerate'}
+                                        View Categorized <ArrowRight className="h-3 w-3" />
                                     </button>
                                 </div>
                             </div>
-                            <div className="p-2 bg-white/20 rounded-xl">
-                                <Key className="h-6 w-6 text-white" />
-                            </div>
                         </div>
-                        <p className="text-blue-50 text-sm opacity-90">Share this code with your doctor for report access.</p>
-                    </div>
-                </div>
 
-                {/* Reports List */}
-                <section className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                    <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                            <FileText className="h-5 w-5 text-teal-600" />
-                            Your Medical Reports
-                        </h2>
-                        <span className="bg-teal-100 text-teal-800 text-xs font-semibold px-2.5 py-1 rounded-full">{data.reports?.length || 0} Total</span>
+                        {/* Search in Reports */}
+                        <div className="relative w-full md:w-72">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <input 
+                                type="text"
+                                placeholder="Search records..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all outline-none"
+                            />
+                        </div>
                     </div>
 
-                    {/* Filter Tabs */}
-                    <div className="px-6 py-2 border-b border-slate-100 bg-slate-50 flex flex-wrap items-center gap-4">
-                        <div className="flex bg-white p-1 rounded-lg border border-slate-200">
+                    {/* Quick Filters */}
+                    <div className="flex flex-wrap items-center justify-between gap-4 pt-4">
+                        <div className="flex p-1 bg-slate-50 rounded-xl border border-slate-100">
                             {[
                                 { id: "all", label: "All Reports" },
                                 { id: "hospital", label: "Hospital Uploads" },
@@ -218,99 +234,107 @@ export default function PatientDashboard() {
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === tab.id ? "bg-teal-600 text-white shadow-sm" : "text-slate-500 hover:text-teal-600 hover:bg-teal-50"
-                                        }`}
+                                    className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${
+                                        activeTab === tab.id 
+                                        ? "bg-teal-600 text-white shadow-md shadow-teal-100" 
+                                        : "text-slate-500 hover:text-slate-900"
+                                    }`}
                                 >
                                     {tab.label}
                                 </button>
                             ))}
                         </div>
 
-                        <select
-                            value={reportTypeFilter}
-                            onChange={(e) => setReportTypeFilter(e.target.value)}
-                            className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        >
-                            <option value="All Types">All Types</option>
-                            {[...new Set(data.reports?.map(r => r.reportType || "General Report"))].map(type => (
-                                <option key={type} value={type}>{type}</option>
-                            ))}
-                        </select>
+                        <div className="flex items-center gap-4">
+                            <select
+                                value={reportTypeFilter}
+                                onChange={(e) => setReportTypeFilter(e.target.value)}
+                                className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all cursor-pointer"
+                            >
+                                <option value="All Types">All Types</option>
+                                {[...new Set(data.reports?.map(r => r.reportType || "General Report"))].map(type => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
-
-                    <div className="divide-y divide-slate-100">
-                        {(() => {
-                            const filteredReports = data.reports?.filter(report => {
-                                const matchesTab = activeTab === "all" || report.uploadedBy === activeTab;
-                                const matchesType = reportTypeFilter === "All Types" || (report.reportType || "General Report") === reportTypeFilter;
-                                return matchesTab && matchesType;
-                            });
-
-                            return filteredReports && filteredReports.length > 0 ? (
-                                filteredReports.map((report, idx) => (
-                                <div key={idx} className="p-6 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row items-center justify-between gap-4">
-                                    <div className="flex items-center gap-4 w-full sm:w-auto">
-                                        <div className="h-12 w-12 rounded-xl bg-teal-100 text-teal-600 flex items-center justify-center shrink-0">
-                                            <FileText className="h-6 w-6" />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-base font-semibold text-slate-800 flex flex-wrap items-center gap-2">
-                                                {report.reportType || "General Report"}
-                                                {report.verified && (
-                                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                                                        <CheckCircle className="h-3 w-3" /> Verified by Dr. {report.verifiedByDoctor.replace(/^Dr\.\s*/i, '')}
-                                                    </span>
-                                                )}
-                                            </h4>
-                                            <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
-                                                <span className="flex items-center gap-1"><User className="h-3 w-3" /> Uploaded by: {report.uploadedBy}</span>
-                                                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {new Date(report.createdAt).toLocaleDateString()} {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                                        <a href={report.fileUrl} target="_blank" rel="noreferrer" className="flex-1 sm:flex-none px-4 py-2 border border-slate-200 bg-white text-slate-700 hover:text-teal-700 hover:border-teal-300 rounded-lg text-sm font-medium transition-all text-center">
-                                            View
-                                        </a>
-                                        {report.uploadedBy === "patient" && (
-                                            <button
-                                                onClick={() => deleteReport(report._id)}
-                                                disabled={deletingId === report._id}
-                                                className="px-3 py-2 border border-slate-200 bg-white text-red-500 hover:bg-red-50 hover:border-red-200 rounded-lg text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-1"
-                                                title="Delete Record"
-                                            >
-                                                <Trash2 className={`h-4 w-4 ${deletingId === report._id ? 'animate-pulse' : ''}`} />
-                                                <span className="sr-only sm:not-sr-only sm:max-w-none">Delete</span>
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="p-12 text-center flex flex-col items-center">
-                                <div className="h-16 w-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
-                                    <FileText className="h-8 w-8" />
-                                </div>
-                                <p className="text-slate-600 font-medium">No reports found.</p>
-                                <p className="text-slate-400 text-sm mt-1 mb-4">No reports match your current filters.</p>
-                                {activeTab !== "all" || reportTypeFilter !== "All Types" ? (
-                                    <button
-                                        onClick={() => { setActiveTab("all"); setReportTypeFilter("All Types"); }}
-                                        className="text-teal-600 hover:text-teal-700 text-sm font-medium bg-teal-50 px-4 py-2 rounded-lg"
-                                    >
-                                        Clear Filters
-                                    </button>
-                                ) : (
-                                    <Link to="/upload-report" className="text-teal-600 hover:text-teal-700 text-sm font-medium bg-teal-50 px-4 py-2 rounded-lg">
-                                        Upload First Report
-                                    </Link>
-                                )}
-                            </div>
-                        );
-                    })()}
                 </div>
-            </section>
-        </main>
-    </div>
-)
+
+                {/* List View */}
+                <div className="divide-y divide-slate-100 p-2">
+                    {filteredReports && filteredReports.length > 0 ? (
+                        filteredReports.map((report, idx) => (
+                            <div key={idx} className="group p-6 hover:bg-slate-50/80 rounded-2xl transition-all duration-300 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                                <div className="flex items-center gap-5">
+                                    <div className="h-14 w-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                                        <FileText className="h-7 w-7 text-teal-500" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h4 className="text-lg font-bold text-slate-900 tracking-tight leading-none group-hover:text-teal-600 transition-colors">
+                                                {report.reportType || "General Report"}
+                                            </h4>
+                                            {report.verified && (
+                                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100">
+                                                    <CheckCircle className="h-3.5 w-3.5" />
+                                                    <span className="text-[10px] font-bold uppercase tracking-wide">Verified by Dr. {report.verifiedByDoctor.replace(/^Dr\.\s*/i, '')}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                            <span className={`flex items-center gap-1.5 ${report.uploadedBy === "patient" ? "text-slate-400" : "text-emerald-600"}`}>
+                                                <User className="h-3 w-3" /> 
+                                                {report.uploadedBy === "patient" ? "Self Uploaded" : `Verified Hospital: ${report.uploadedBy}`}
+                                            </span>
+                                            <span className="flex items-center gap-1.5 text-slate-400">
+                                                <Calendar className="h-3 w-3" /> {new Date(report.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <a 
+                                        href={report.fileUrl} 
+                                        target="_blank" 
+                                        rel="noreferrer" 
+                                        className="flex-1 lg:flex-none px-6 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 hover:-translate-y-0.5 transition-all shadow-md active:translate-y-0 text-center uppercase tracking-widest"
+                                    >
+                                        View
+                                    </a>
+                                    {report.uploadedBy === "patient" && !report.verified && (
+                                        <button
+                                            onClick={() => deleteReport(report._id)}
+                                            disabled={deletingId === report._id}
+                                            className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100 group/del"
+                                            title="Delete Record"
+                                        >
+                                            <Trash2 className={`h-5 w-5 ${deletingId === report._id ? 'animate-pulse' : ''} group-hover/del:scale-110 transition-transform`} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="py-24 text-center">
+                            <div className="h-20 w-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
+                                <Search className="h-10 w-10 text-slate-200" />
+                            </div>
+                            <h4 className="text-xl font-bold text-slate-900 tracking-tight">No records discovered</h4>
+                            <p className="text-slate-400 font-medium max-w-[280px] mx-auto mt-2">
+                                We couldn't find any medical reports matching your current configuration.
+                            </p>
+                            <button 
+                                onClick={() => { setActiveTab("all"); setReportTypeFilter("All Types"); setSearchTerm(""); }}
+                                className="mt-8 text-teal-600 font-bold hover:text-teal-700 py-2 px-6 bg-teal-50 rounded-xl transition-all"
+                            >
+                                Reset Search Parameters
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+        </div>
+    )
 }

@@ -1,4 +1,8 @@
 const Notification = require("../models/Notification")
+const Report = require("../models/Report")
+const Patient = require("../models/Patient")
+const Doctor = require("../models/Doctor")
+
 
 exports.verifyReport = async (req, res) => {
 
@@ -17,6 +21,15 @@ exports.verifyReport = async (req, res) => {
             type: 'VERIFICATION',
             reportId: report._id
         })
+
+        if (report.uploadedByHospitalId) {
+            await Notification.create({
+                hospitalId: report.uploadedByHospitalId,
+                message: `Report (${report.reportType}) uploaded by you was verified by Dr. ${doctorName}.`,
+                type: 'VERIFICATION',
+                reportId: report._id
+            })
+        }
     }
 
     res.json(report)
@@ -51,8 +64,14 @@ exports.getPatientByAccessCode = async (req, res) => {
 
 exports.getDoctorDashboard = async (req, res) => {
     try {
-        const { accessCode } = req.body;
-        const doctor = await Doctor.findById(req.user.id).populate("hospitalId", "name");
+        const accessCode = req.body ? req.body.accessCode : undefined;
+        let doctor;
+        try {
+            doctor = await Doctor.findById(req.user.id).populate("hospitalId", "name");
+        } catch (popErr) {
+            // If populate fails (e.g. invalid hospitalId reference), try without populate
+            doctor = await Doctor.findById(req.user.id);
+        }
 
         if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
@@ -60,6 +79,8 @@ exports.getDoctorDashboard = async (req, res) => {
             name: doctor.name,
             doctorId: doctor.doctorId,
             email: doctor.email,
+            licenseNumber: doctor.licenseNumber,
+            isVerified: doctor.isVerified,
             specialty: doctor.specialty || "Not Specified",
             phoneNumber: doctor.phoneNumber || "Not Specified",
             gender: doctor.gender || "Not Specified",
@@ -88,6 +109,37 @@ exports.getDoctorDashboard = async (req, res) => {
             reports: patient.reports
         });
 
+    } catch (err) {
+        res.status(500).json({ error: err.message || "Server Error" });
+    }
+};
+
+exports.updateProfile = async (req, res) => {
+    try {
+        const { name, email, phoneNumber, gender, specialty } = req.body;
+        
+        const updatedDoctor = await Doctor.findByIdAndUpdate(
+            req.user.id,
+            { name, email, phoneNumber, gender, specialty },
+            { new: true, runValidators: true }
+        ).select("-password").populate("hospitalId", "name");
+
+        if (!updatedDoctor) {
+            return res.status(404).json({ error: "Doctor not found" });
+        }
+
+        const profileData = {
+            name: updatedDoctor.name,
+            doctorId: updatedDoctor.doctorId,
+            licenseNumber: updatedDoctor.licenseNumber,
+            email: updatedDoctor.email,
+            specialty: updatedDoctor.specialty || "Not Specified",
+            phoneNumber: updatedDoctor.phoneNumber || "Not Specified",
+            gender: updatedDoctor.gender || "Not Specified",
+            hospitalName: updatedDoctor.hospitalId?.name || "Not Assigned"
+        };
+
+        res.json({ doctor: profileData });
     } catch (err) {
         res.status(500).json({ error: err.message || "Server Error" });
     }

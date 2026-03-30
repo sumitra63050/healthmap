@@ -3,8 +3,15 @@ const mongoose = require("mongoose")
 const notificationSchema = new mongoose.Schema({
     patientId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Patient",
-        required: true
+        ref: "Patient"
+    },
+    hospitalId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Hospital"
+    },
+    doctorId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Doctor"
     },
     message: {
         type: String,
@@ -12,7 +19,7 @@ const notificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['VERIFICATION', 'UPLOAD'],
+        enum: ['VERIFICATION', 'UPLOAD', 'DOCTOR_APPROVAL'],
         required: true
     },
     isRead: {

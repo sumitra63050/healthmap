@@ -6,7 +6,6 @@ const authRoutes = require("./routes/authRoutes")
 const patientRoutes = require("./routes/patientRoutes")
 const doctorRoutes = require("./routes/doctorRoutes")
 const hospitalRoutes = require("./routes/hospitalRoutes")
-const adminRoutes = require("./routes/adminRoutes")
 const app = express()
 
 app.use(cors())
@@ -15,7 +14,6 @@ app.use("/api/auth", authRoutes)
 app.use("/api/patient", patientRoutes)
 app.use("/api/doctor", doctorRoutes)
 app.use("/api/hospital", hospitalRoutes)
-app.use("/api/admin", adminRoutes)
 
 mongoose.connect(process.env.MONGO_URI, {
     serverSelectionTimeoutMS: 5000

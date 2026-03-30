@@ -1,5 +1,7 @@
+const mongoose = require("mongoose")
 const Notification = require("../models/Notification")
 const Patient = require("../models/Patient")
+const Doctor = require("../models/Doctor")
 const Report = require("../models/Report")
 const cloudinary = require("../config/cloudinary")
 
@@ -69,11 +71,12 @@ exports.uploadHospitalReport = async (req, res) => {
 
 }
 
-const Doctor = require("../models/Doctor")
+
 
 exports.getPendingDoctors = async (req, res) => {
     try {
-        const pendingDoctors = await Doctor.find({ isVerified: false, hospitalId: req.user.id }).select("-password");
+        const hospitalId = new mongoose.Types.ObjectId(req.user.id);
+        const pendingDoctors = await Doctor.find({ isVerified: false, hospitalId: hospitalId }).select("-password");
         res.json({ doctors: pendingDoctors });
     } catch (err) {
         res.status(500).json({ error: err.message || "Server Error" });
@@ -114,10 +117,11 @@ exports.getHospitalReports = async (req, res) => {
         // 1. Get unique patient IDs this hospital has uploaded reports for
         const uniquePatientIds = await Report.distinct("patientId", { uploadedByHospitalId: hospitalId });
 
-        // 2. Fetch those patients and populate ALL their reports
+        // 2. Fetch those patients and populate ONLY their reports uploaded by this hospital
         const patientsData = await Patient.find({ _id: { $in: uniquePatientIds } })
             .populate({
                 path: 'reports',
+                match: { uploadedByHospitalId: hospitalId },
                 options: { sort: { createdAt: -1 } }
             });
 
@@ -191,5 +195,86 @@ exports.deleteHospitalReport = async (req, res) => {
 
     } catch (err) {
         res.status(500).json({ error: err.message || "Server Error" });
+    }
+};
+
+// Get hospital dashboard/profile data
+exports.getHospitalDashboard = async (req, res) => {
+    try {
+        const Hospital = require("../models/Hospital");
+        const hospital = await Hospital.findById(req.user.id).select("-password");
+
+        if (!hospital) return res.status(404).json({ message: "Hospital not found" });
+
+        res.json({
+            name: hospital.name,
+            email: hospital.email,
+            hospitalId: hospital.hospitalId,
+            registrationNumber: hospital.registrationNumber
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message || "Server Error" });
+    }
+};
+
+exports.updateProfile = async (req, res) => {
+    try {
+        const Hospital = require("../models/Hospital");
+        const { name, email } = req.body;
+        
+        const updatedHospital = await Hospital.findByIdAndUpdate(
+            req.user.id,
+            { name, email },
+            { new: true, runValidators: true }
+        ).select("-password");
+
+        if (!updatedHospital) {
+            return res.status(404).json({ error: "Hospital not found" });
+        }
+
+        res.json(updatedHospital);
+    } catch (err) {
+        res.status(500).json({ error: err.message || "Server Error" });
+    }
+};
+
+exports.getNotifications = async (req, res) => {
+    try {
+        const notifications = await Notification.find({ 
+            hospitalId: req.user.id, 
+            type: { $in: ['DOCTOR_APPROVAL', 'VERIFICATION'] } 
+        })
+            .sort({ createdAt: -1 })
+            .limit(50);
+        console.log("FETCHED HOSPITAL NOTIFICATIONS:", JSON.stringify({ reqUserId: req.user.id, count: notifications.length, notifs: notifications }, null, 2));
+        res.json({ notifications });
+    } catch (err) {
+        res.status(500).json({ error: err.message || "Server error" });
+    }
+};
+
+exports.markNotificationAsRead = async (req, res) => {
+    try {
+        const notification = await Notification.findOneAndUpdate(
+            { _id: req.params.id, hospitalId: req.user.id },
+            { isRead: true },
+            { new: true }
+        );
+        if (!notification) return res.status(404).json({ error: "Notification not found" });
+        res.json({ message: "Notification marked as read", notification });
+    } catch (err) {
+        res.status(500).json({ error: err.message || "Server error" });
+    }
+};
+
+exports.markAllNotificationsAsRead = async (req, res) => {
+    try {
+        await Notification.updateMany(
+            { hospitalId: req.user.id, isRead: false },
+            { isRead: true }
+        );
+        res.json({ message: "All notifications marked as read" });
+    } catch (err) {
+        res.status(500).json({ error: err.message || "Server error" });
     }
 };

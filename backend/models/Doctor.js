@@ -10,6 +10,7 @@ const doctorSchema = new mongoose.Schema({
     phoneNumber: { type: String },
     specialty: { type: String },
     gender: { type: String },
+    profilePic: { type: String },
     isVerified: { type: Boolean, default: false }
 }, { timestamps: true })
 

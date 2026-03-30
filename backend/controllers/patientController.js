@@ -89,7 +89,12 @@ exports.getPatientDashboard = async (req, res) => {
             email: patient.email,
             medicalId: patient.medicalId,
             doctorAccessCode: patient.doctorAccessCode,
-            reports: patient.reports
+            reports: patient.reports,
+            phoneNumber: patient.phoneNumber,
+            gender: patient.gender,
+            bloodGroup: patient.bloodGroup,
+            dob: patient.dob,
+            aadhaarNumber: patient.aadhaarNumber
         })
 
     } catch (err) {
@@ -112,6 +117,10 @@ exports.deleteReport = async (req, res) => {
 
         if (report.uploadedBy !== "patient") {
             return res.status(403).json({ error: "You can only delete reports that you have uploaded" });
+        }
+        
+        if (report.verified) {
+            return res.status(403).json({ error: "Cannot delete a report that has been verified by a doctor" });
         }
 
         // Delete from cloudinary
@@ -168,4 +177,25 @@ exports.markAllNotificationsAsRead = async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message || "Server Error" });
     }
-}
+}
+
+exports.updateProfile = async (req, res) => {
+    try {
+        const { name, email, phoneNumber, gender, bloodGroup, dob } = req.body;
+        
+        const updatedPatient = await Patient.findByIdAndUpdate(
+            req.user.id,
+            { name, email, phoneNumber, gender, bloodGroup, dob },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedPatient) {
+            return res.status(404).json({ error: "Patient not found" });
+        }
+
+        res.json(updatedPatient);
+    } catch (err) {
+        res.status(500).json({ error: err.message || "Server Error" });
+    }
+}
+

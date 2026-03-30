@@ -6,7 +6,7 @@ const hospitalSchema = new mongoose.Schema({
     password: { type: String, required: true },
     hospitalId: { type: String, unique: true },
     registrationNumber: { type: String, required: true, unique: true },
-    isVerified: { type: Boolean, default: false }
+    profilePic: String
 }, { timestamps: true })
 
 module.exports = mongoose.model("Hospital", hospitalSchema)

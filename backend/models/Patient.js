@@ -11,6 +11,7 @@ const patientSchema = new mongoose.Schema({
     bloodGroup: String,
     phoneNumber: String,
     aadhaarNumber: { type: String, unique: true },
+    profilePic: String,
     reports: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Report"

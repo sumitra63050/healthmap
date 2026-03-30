@@ -1,17 +1,30 @@
 import { useState, useRef } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { UploadCloud, File, X, CheckCircle, User, ArrowLeft } from "lucide-react"
-import logo from "../assets/logo.png"
+import { 
+    UploadCloud, 
+    File, 
+    X, 
+    CheckCircle, 
+    LayoutDashboard, 
+    FileText, 
+    ArrowLeft,
+    ShieldCheck,
+    AlertCircle
+} from "lucide-react"
 import API from "../services/api"
 
 export default function UploadReport() {
     const [file, setFile] = useState(null)
     const [reportType, setReportType] = useState("General Report")
+    const [customReportType, setCustomReportType] = useState("")
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
     const [success, setSuccess] = useState(false)
+    const [medicalId, setMedicalId] = useState("")
     const fileInputRef = useRef(null)
     const navigate = useNavigate()
+    const userRole = localStorage.getItem("role") || localStorage.getItem("userRole") || "patient"
+    const hospitalName = localStorage.getItem("userName") || "Hospital"
 
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files[0]) {
@@ -33,6 +46,10 @@ export default function UploadReport() {
             setError("Please select a file to upload.")
             return
         }
+        if (userRole === 'hospital' && !medicalId) {
+            setError("Please enter the patient's Medical ID.")
+            return
+        }
 
         const token = localStorage.getItem("token")
         if (!token) {
@@ -45,10 +62,17 @@ export default function UploadReport() {
 
         const formData = new FormData()
         formData.append("file", file)
-        formData.append("reportType", reportType)
+        formData.append("reportType", reportType === "Other" ? customReportType || "Other" : reportType)
+        
+        if (userRole === 'hospital') {
+            formData.append("medicalId", medicalId)
+            formData.append("hospitalName", hospitalName)
+        }
+
+        const endpoint = userRole === 'hospital' ? "/hospital/upload" : "/patient/upload"
 
         try {
-            await API.post("/patient/upload", formData, {
+            await API.post(endpoint, formData, {
                 headers: {
                     "Authorization": token
                 }
@@ -69,72 +93,80 @@ export default function UploadReport() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
-            <nav className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 sticky top-0 z-10 shadow-sm">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-                        <img src={logo} alt="HealthMap Logo" className="h-8 w-8 object-contain" />
-                        <span className="text-lg sm:text-xl font-bold text-teal-900">HEALTHMAP PORTAL</span>
-                    </Link>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-600 bg-slate-100 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg">
-                        <User className="h-3 w-3 sm:h-4 sm:w-4" />
-                        Patient Services
+        <div className="animate-fade-in space-y-8 pb-12">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <div className="flex items-center gap-2 text-slate-400 mb-1">
+                        <Link to="/patient" className="hover:text-teal-600 transition-colors flex items-center gap-1">
+                            <LayoutDashboard className="h-4 w-4" />
+                            <span className="text-xs font-bold uppercase tracking-widest">Dashboard</span>
+                        </Link>
+                        <span className="text-slate-300">/</span>
+                        <span className="text-xs font-bold uppercase tracking-widest text-teal-600">Upload</span>
                     </div>
+                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Sync Medical Record</h1>
+                    <p className="text-slate-500 font-medium tracking-tight">Add your personal health documentation to the secure ledger.</p>
                 </div>
-            </nav>
+                <div className="px-4 py-2 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                    <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">End-to-End Encrypted</span>
+                </div>
+            </div>
 
-            <main className="max-w-2xl mx-auto px-4 py-12">
-                <Link to="/patient" className="inline-flex items-center gap-2 text-slate-500 hover:text-teal-600 transition-colors mb-6 font-medium text-sm">
-                    <ArrowLeft className="h-4 w-4" /> Back to Dashboard
-                </Link>
-
-                <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
-                    <div className="bg-teal-600 px-8 py-10 text-center">
-                        <img src={logo} alt="Upload Logo" className="h-16 w-16 object-contain mx-auto mb-4" />
-                        <h1 className="text-3xl font-bold text-white mb-2">Upload Personal Report</h1>
-                        <p className="text-teal-100">Add past medical records to your profile securely.</p>
-                    </div>
-
-                    <div className="p-8">
-                        {error && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm text-center">
-                                {error}
-                            </div>
-                        )}
-
+            <div className="max-w-2xl mx-auto py-8">
+                <div className="bg-white border border-slate-200 rounded-[2.5rem] shadow-sm overflow-hidden border-b-4 border-b-teal-600/10">
+                    <div className="p-10">
                         {success ? (
-                            <div className="flex flex-col items-center justify-center py-10 space-y-4 animate-in fade-in slide-in-from-bottom-4">
-                                <CheckCircle className="h-16 w-16 text-emerald-500" />
-                                <h3 className="text-xl font-bold text-slate-800">Upload Successful</h3>
-                                <p className="text-slate-500 text-center">Redirecting back to your dashboard...</p>
+                            <div className="flex flex-col items-center justify-center py-12 space-y-6 animate-in fade-in slide-in-from-bottom-4 text-center">
+                                <div className="h-20 w-20 bg-emerald-50 rounded-[2rem] flex items-center justify-center">
+                                    <CheckCircle className="h-10 w-10 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Synthesis Complete</h3>
+                                    <p className="text-slate-500 font-medium mt-2">Your medical record has been securely archived.</p>
+                                </div>
+                                <div className="h-1 w-48 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-teal-600 animate-[progress_2s_ease-in-out]"></div>
+                                </div>
                             </div>
                         ) : (
-                            <form onSubmit={uploadReport} className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-slate-700 block">Select Report File</label>
-
+                            <form onSubmit={uploadReport} className="space-y-10">
+                                {/* File Dropzone */}
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Document Data</label>
                                     {!file ? (
-                                        <input
-                                            type="file"
-                                            onChange={handleFileChange}
-                                            className="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 transition-colors cursor-pointer border border-slate-200 rounded-xl"
-                                            accept=".pdf,.jpg,.jpeg,.png"
-                                        />
+                                        <div className="relative border-4 border-dashed border-slate-50 rounded-[2rem] p-12 text-center hover:bg-slate-50/50 hover:border-teal-200 transition-all cursor-pointer group bg-slate-50/30">
+                                            <input
+                                                type="file"
+                                                onChange={handleFileChange}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                ref={fileInputRef}
+                                            />
+                                            <div className="flex flex-col items-center justify-center pointer-events-none">
+                                                <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                                                    <UploadCloud className="h-8 w-8 text-teal-600" />
+                                                </div>
+                                                <p className="text-slate-900 font-black text-sm uppercase tracking-widest">Transmit File</p>
+                                                <p className="text-slate-400 text-[10px] mt-2 font-bold uppercase tracking-tighter">PDF • JPG • PNG (Max 10MB)</p>
+                                            </div>
+                                        </div>
                                     ) : (
-                                        <div className="flex items-center justify-between p-4 bg-teal-50 border border-teal-100 rounded-xl">
-                                            <div className="flex items-center gap-3 overflow-hidden">
-                                                <div className="p-2 bg-teal-100 rounded-lg shrink-0">
-                                                    <File className="h-6 w-6 text-teal-600" />
+                                        <div className="p-6 bg-slate-900 rounded-[2rem] flex items-center justify-between gap-4 shadow-xl shadow-slate-200">
+                                            <div className="flex items-center gap-4 min-w-0">
+                                                <div className="h-12 w-12 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
+                                                    <FileText className="h-6 w-6 text-white" />
                                                 </div>
                                                 <div className="truncate">
-                                                    <p className="text-sm font-medium text-slate-800 truncate">{file.name}</p>
-                                                    <p className="text-xs text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                    <p className="text-sm font-bold text-white truncate">{file.name}</p>
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{(file.size / 1024 / 1024).toFixed(2)} MB • Ready for Sync</p>
                                                 </div>
                                             </div>
                                             <button
                                                 type="button"
-                                                onClick={() => setFile(null)}
-                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                                                onClick={clearFile}
+                                                className="h-10 w-10 bg-white/10 hover:bg-red-500 hover:text-white text-slate-400 rounded-xl transition-all flex items-center justify-center shrink-0"
                                             >
                                                 <X className="h-5 w-5" />
                                             </button>
@@ -142,35 +174,89 @@ export default function UploadReport() {
                                     )}
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-slate-700 block">Report Type</label>
-                                    <select
-                                        value={reportType}
-                                        onChange={(e) => setReportType(e.target.value)}
-                                        className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                                    >
-                                        <option value="General Report">General Report</option>
-                                        <option value="Blood Test">Blood Test</option>
-                                        <option value="X-Ray">X-Ray</option>
-                                        <option value="MRI">MRI</option>
-                                        <option value="CT Scan">CT Scan</option>
-                                        <option value="Prescription">Prescription</option>
-                                        <option value="Other">Other</option>
-                                    </select>
+                                {userRole === 'hospital' && (
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Patient Medical ID</label>
+                                        <div className="relative animate-in fade-in slide-in-from-top-2">
+                                            <input
+                                                type="text"
+                                                required={userRole === 'hospital'}
+                                                value={medicalId}
+                                                onChange={(e) => setMedicalId(e.target.value)}
+                                                placeholder="e.g. HM-12345"
+                                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Report Classification */}
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Medical Classification</label>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                        {[
+                                            "General Report",
+                                            "Blood Test",
+                                            "Radiology",
+                                            "Prescription",
+                                            "Diagnostic",
+                                            "Other"
+                                        ].map(type => (
+                                            <button
+                                                key={type}
+                                                type="button"
+                                                onClick={() => setReportType(type)}
+                                                className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                                                    reportType === type 
+                                                    ? "bg-teal-600 border-teal-600 text-white shadow-lg shadow-teal-100" 
+                                                    : "bg-white border-slate-100 text-slate-400 hover:border-teal-200 hover:text-slate-900"
+                                                }`}
+                                            >
+                                                {type}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {reportType === "Other" && (
+                                        <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                                            <input
+                                                type="text"
+                                                required
+                                                placeholder="Enter custom report type..."
+                                                value={customReportType}
+                                                onChange={(e) => setCustomReportType(e.target.value)}
+                                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all outline-none"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    disabled={loading || !file}
-                                    className="w-full flex items-center justify-center py-4 px-4 border border-transparent rounded-xl shadow-sm text-base font-semibold text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                                >
-                                    {loading ? "Uploading..." : "Upload to Profile"}
-                                </button>
+                                <div className="pt-4 border-t border-slate-50">
+                                    <button
+                                        type="submit"
+                                        disabled={loading || !file}
+                                        className="w-full py-5 bg-teal-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-teal-700 hover:-translate-y-1 active:translate-y-0 transition-all shadow-xl shadow-teal-100 disabled:opacity-50 disabled:translate-y-0"
+                                    >
+                                        {loading ? "Establishing Secure Connection..." : "Initiate Secure Sync"}
+                                    </button>
+                                    
+                                    {error && (
+                                        <div className="mt-4 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                                            <AlertCircle className="h-4 w-4" />
+                                            {error}
+                                        </div>
+                                    )}
+                                </div>
                             </form>
                         )}
                     </div>
                 </div>
-            </main>
+                
+                <p className="text-center text-[10px] font-black text-slate-300 uppercase tracking-widest mt-8 flex items-center justify-center gap-2">
+                    <ShieldCheck className="h-4 w-4" />
+                    Secure cryptographic verification in progress
+                </p>
+            </div>
         </div>
     )
 }

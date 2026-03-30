@@ -1,11 +1,12 @@
 const Patient = require("../models/Patient")
 const Doctor = require("../models/Doctor")
 const Hospital = require("../models/Hospital")
-const Admin = require("../models/Admin")
+const Notification = require("../models/Notification")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const generateMedicalId = require("../utils/generateMedicalid")
 const generateAccessCode = require("../utils/generateAccessCode")
+const cloudinary = require("../config/cloudinary")
 
 exports.register = async (req, res) => {
     try {
@@ -67,6 +68,14 @@ exports.register = async (req, res) => {
                 specialty,
                 gender
             })
+
+            await Notification.create({
+                hospitalId: hospitalId,
+                doctorId: doctor._id,
+                message: `New doctor ${name} (${specialty}, Lic: ${licenseNumber}) has registered and is pending your approval.`,
+                type: 'DOCTOR_APPROVAL'
+            })
+
             return res.json({ message: "Doctor registered successfully. Please wait for hospital verification.", user: { id: doctor._id, role: 'doctor' } })
         }
 
@@ -81,10 +90,17 @@ exports.register = async (req, res) => {
                 name,
                 email,
                 password: hashed,
-                hospitalId: generateMedicalId(), // Or a different generator for hospitals
+                hospitalId: generateMedicalId(),
                 registrationNumber
             })
-            return res.json({ message: "Hospital registered successfully. Please wait for admin verification.", user: { id: hospital._id, role: 'hospital' } })
+
+            const token = jwt.sign({ id: hospital._id, role: 'hospital' }, process.env.JWT_SECRET)
+            return res.json({
+                message: "Hospital registered successfully",
+                token,
+                role: 'hospital',
+                user: { id: hospital._id, name: hospital.name, email: hospital.email }
+            })
         }
 
     } catch (err) {
@@ -110,10 +126,6 @@ exports.login = async (req, res) => {
             role = 'hospital'
         }
 
-        if (!user) {
-            user = await Admin.findOne({ email })
-            role = 'admin'
-        }
 
         if (!user) return res.status(400).json({ error: "User not found" })
 
@@ -125,13 +137,52 @@ exports.login = async (req, res) => {
         if (role === 'doctor' && !user.isVerified) {
             return res.status(403).json({ error: "Your account is pending verification by a hospital." })
         }
-        if (role === 'hospital' && !user.isVerified) {
-            return res.status(403).json({ error: "Your account is pending verification by the admin." })
-        }
 
         const token = jwt.sign({ id: user._id, role }, process.env.JWT_SECRET)
 
         res.json({ token, role, user })
+    } catch (err) {
+        res.status(500).json({ error: err.message || "Server Error" })
+    }
+}
+
+exports.updateProfilePic = async (req, res) => {
+    try {
+        const file = req.file
+        if (!file) {
+            return res.status(400).json({ error: "No image file provided" })
+        }
+
+        const role = req.user.role
+        const userId = req.user.id
+
+        const upload = cloudinary.uploader.upload_stream(
+            { resource_type: "image", folder: "profile_pics" },
+            async (error, result) => {
+                if (error) return res.status(500).json({ error: "Cloudinary upload failed" })
+
+                try {
+                    let updatedUser;
+                    if (role === 'patient') {
+                        updatedUser = await Patient.findByIdAndUpdate(userId, { profilePic: result.secure_url }, { new: true })
+                    } else if (role === 'doctor') {
+                        updatedUser = await Doctor.findByIdAndUpdate(userId, { profilePic: result.secure_url }, { new: true })
+                    } else if (role === 'hospital') {
+                        updatedUser = await Hospital.findByIdAndUpdate(userId, { profilePic: result.secure_url }, { new: true })
+                    }
+
+                    if (!updatedUser) {
+                        return res.status(404).json({ error: "User not found" })
+                    }
+
+                    res.json({ message: "Profile picture updated successfully", profilePic: result.secure_url })
+                } catch (dbError) {
+                    res.status(500).json({ error: "Failed to update user profile picture" })
+                }
+            }
+        )
+
+        upload.end(file.buffer)
     } catch (err) {
         res.status(500).json({ error: err.message || "Server Error" })
     }

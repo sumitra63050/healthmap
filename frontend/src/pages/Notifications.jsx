@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
-import { Bell, Check, CheckCheck, Trash2, ArrowLeft, Clock, FileText, CheckCircle2 } from "lucide-react"
-import logo from "../assets/logo.png"
+import { Bell, Check, CheckCheck, FileText, CheckCircle2, LayoutDashboard, Clock, Shield } from "lucide-react"
 import API from "../services/api"
 
 export default function Notifications() {
     const [notifications, setNotifications] = useState([])
     const [loading, setLoading] = useState(true)
+    const [filter, setFilter] = useState("all") // all, UPLOAD, VERIFICATION
+    const userRole = localStorage.getItem("role") || localStorage.getItem("userRole") || "patient";
 
     useEffect(() => {
         fetchNotifications()
@@ -14,16 +14,19 @@ export default function Notifications() {
 
     const fetchNotifications = async () => {
         try {
-            const res = await API.get("/patient/notifications", {
+            const res = await API.get(`/${userRole}/notifications`, {
                 headers: { Authorization: localStorage.getItem("token") }
             })
             const fetchedNotifications = res.data.notifications;
             setNotifications(fetchedNotifications)
 
-            // Auto mark all as read if there are unread notifications
-            if (fetchedNotifications.some(n => !n.isRead)) {
+            // Auto mark as read only for doctors or specific roles if needed, but not patients/hospitals by default
+            // users should mark them as read manually or by interacting with them
+            /*
+            if (userRole !== 'hospital' && fetchedNotifications.some(n => !n.isRead)) {
                 await markAllAsRead();
             }
+            */
         } catch (err) {
             console.error("Failed to fetch notifications", err)
         } finally {
@@ -33,7 +36,7 @@ export default function Notifications() {
 
     const markAsRead = async (id) => {
         try {
-            await API.put(`/patient/notifications/${id}/read`, {}, {
+            await API.put(`/${userRole}/notifications/${id}/read`, {}, {
                 headers: { Authorization: localStorage.getItem("token") }
             })
             setNotifications(notifications.map(n => n._id === id ? { ...n, isRead: true } : n))
@@ -44,7 +47,7 @@ export default function Notifications() {
 
     const markAllAsRead = async () => {
         try {
-            await API.put("/patient/notifications/read-all", {}, {
+            await API.put(`/${userRole}/notifications/read-all`, {}, {
                 headers: { Authorization: localStorage.getItem("token") }
             })
             setNotifications(notifications.map(n => ({ ...n, isRead: true })))
@@ -53,107 +56,188 @@ export default function Notifications() {
         }
     }
 
+    const handleDoctorResolution = async (notificationId, doctorId, action) => {
+        try {
+            await API.put(`/hospital/${action}-doctor`, { id: doctorId }, {
+                headers: { Authorization: localStorage.getItem("token") }
+            });
+            await markAsRead(notificationId);
+            fetchNotifications();
+        } catch (err) {
+            console.error(`Failed to ${action} doctor`, err);
+        }
+    };
+
     const formatDate = (dateString) => {
-        const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+        const options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
         return new Date(dateString).toLocaleDateString(undefined, options)
     }
 
+    const filteredNotifications = notifications.filter(n => filter === "all" || n.type === filter)
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+                <div className="h-12 w-12 border-4 border-teal-600/20 border-t-teal-600 rounded-full animate-spin"></div>
+                <p className="text-slate-500 font-medium animate-pulse">Retrieving communications...</p>
+            </div>
+        )
+    }
+
     return (
-        <div className="min-h-screen bg-slate-50">
-            <nav className="bg-white border-b border-slate-200 sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16 items-center">
-                        <div className="flex items-center gap-4">
-                            <Link to="/patient" className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                                <ArrowLeft className="h-5 w-5 text-slate-600" />
-                            </Link>
-                            <div className="flex items-center gap-2">
-                                <img src={logo} alt="Logo" className="h-8 w-8" />
-                                <span className="text-xl font-bold text-teal-900 hidden sm:block">HEALTHMAP</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={markAllAsRead}
-                                className="text-sm font-medium text-teal-600 hover:text-teal-700 flex items-center gap-1 bg-teal-50 px-3 py-1.5 rounded-lg transition-colors"
-                            >
-                                <CheckCheck className="h-4 w-4" />
-                                Mark all as read
-                            </button>
-                        </div>
+        <div className="animate-fade-in space-y-8 pb-12">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <div className="flex items-center gap-2 text-slate-400 mb-1">
+                        <LayoutDashboard className="h-4 w-4" />
+                        <span className="text-xs font-bold uppercase tracking-widest">Updates</span>
                     </div>
+                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Notification Center</h1>
+                    <p className="text-slate-500 font-medium">Monitoring activity on your medical identity profile.</p>
                 </div>
-            </nav>
+                {userRole !== 'hospital' && (
+                    <button
+                        onClick={markAllAsRead}
+                        className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md active:translate-y-0.5"
+                    >
+                        Dismiss All
+                    </button>
+                )}
+            </div>
 
-            <main className="max-w-3xl mx-auto px-4 py-8">
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                            <Bell className="h-6 w-6 text-teal-600" />
-                            Notifications
-                        </h1>
-                        <p className="text-slate-500 text-sm mt-1">Stay updated with your reports and records</p>
-                    </div>
-                    <span className="px-3 py-1 bg-slate-200 text-slate-700 rounded-full text-xs font-bold">
-                        {notifications.filter(n => !n.isRead).length} Unread
-                    </span>
+            {/* Filter Tabs */}
+            {userRole !== 'hospital' && (
+                <div className="flex border-b border-slate-200 gap-8 overflow-x-auto pb-px">
+                    {[
+                        { id: "all", label: "All Activity", icon: Bell },
+                        { id: "UPLOAD", label: "Hospital Uploads", icon: FileText },
+                        { id: "VERIFICATION", label: "Medical Verifications", icon: Shield }
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setFilter(tab.id)}
+                            className={`flex items-center gap-2 pb-4 text-[10px] font-black uppercase tracking-widest transition-all relative whitespace-nowrap ${filter === tab.id ? "text-teal-600" : "text-slate-400 hover:text-slate-600"
+                                }`}
+                        >
+                            <tab.icon className="h-3 w-3" />
+                            {tab.label}
+                            {filter === tab.id && <div className="absolute bottom-0 left-0 w-full h-1 bg-teal-600 rounded-full"></div>}
+                        </button>
+                    ))}
                 </div>
+            )}
 
-                {loading ? (
-                    <div className="flex justify-center items-center py-20">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600"></div>
-                    </div>
-                ) : notifications.length === 0 ? (
-                    <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
-                        <Bell className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-slate-900">No notifications yet</h3>
-                        <p className="text-slate-500 mt-2">We'll notify you when your reports are ready</p>
+            <div className="max-w-4xl mx-auto space-y-6">
+                {notifications.length === 0 ? (
+                    <div className="py-32 text-center bg-white border border-slate-200 rounded-[2.5rem] border-dashed">
+                        <div className="h-20 w-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
+                            <Bell className="h-10 w-10 text-slate-200" />
+                        </div>
+                        <h4 className="text-xl font-bold text-slate-900 tracking-tight">Transmission Archive Empty</h4>
+                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2 px-12">No recent events or alerts detected in your activity stream.</p>
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {notifications.map((notification) => (
+                        <div className="flex items-center gap-2 px-4 mb-2">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                {userRole === 'hospital' ? "Personnel Verifications" : filter === "all" ? "Recent Activity" : filter === "UPLOAD" ? "Medical Submissions" : "Clinical Validations"}
+                            </span>
+                        </div>
+                        
+                        {(userRole === 'hospital' ? notifications : filteredNotifications).map((notification) => (
                             <div
                                 key={notification._id}
-                                className={`p-4 rounded-2xl border transition-all duration-200 ${notification.isRead
-                                    ? "bg-white border-slate-200 opacity-80"
-                                    : "bg-white border-teal-100 shadow-md ring-1 ring-teal-500/10"
-                                    }`}
+                                className={`group relative p-6 bg-white border rounded-[2rem] transition-all duration-300 ${
+                                    notification.isRead 
+                                    ? "border-slate-100 opacity-60" 
+                                    : "border-teal-200 shadow-xl shadow-teal-50/50 ring-1 ring-teal-50"
+                                }`}
                             >
-                                <div className="flex gap-4">
-                                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${notification.type === 'VERIFICATION' ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"
-                                        }`}>
-                                        {notification.type === 'VERIFICATION' ? <CheckCircle2 className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
+                                <div className="flex gap-6">
+                                    <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 border transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${
+                                        notification.type === 'VERIFICATION' 
+                                        ? "bg-emerald-50 border-emerald-100 text-emerald-600" 
+                                        : notification.type === 'DOCTOR_APPROVAL'
+                                        ? "bg-amber-50 border-amber-100 text-amber-600"
+                                        : "bg-indigo-50 border-indigo-100 text-indigo-600"
+                                    }`}>
+                                        {notification.type === 'VERIFICATION' ? <CheckCircle2 className="h-7 w-7" /> : notification.type === 'DOCTOR_APPROVAL' ? <Shield className="h-7 w-7" /> : <FileText className="h-7 w-7" />}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex justify-between items-start mb-1">
-                                            <p className={`text-sm font-semibold ${notification.isRead ? "text-slate-700" : "text-slate-900"}`}>
-                                                {notification.type === 'VERIFICATION' ? "Report Verified" : "New Report Uploaded"}
-                                            </p>
-                                            <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap ml-2">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h4 className="text-lg font-black text-slate-900 tracking-tight">
+                                                {notification.type === 'VERIFICATION' ? "Medical Analysis Verified" : notification.type === 'DOCTOR_APPROVAL' ? "Doctor Validation Request" : "New Medical Report"}
+                                            </h4>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-lg">
                                                 {formatDate(notification.createdAt)}
                                             </span>
                                         </div>
-                                        <p className="text-sm text-slate-600 leading-relaxed mb-3">
+                                        <p className="text-sm font-medium text-slate-500 leading-relaxed mb-4">
                                             {notification.message}
                                         </p>
                                         <div className="flex items-center gap-3">
-                                            {!notification.isRead && (
+                                            {notification.type === 'VERIFICATION' ? (
+                                                <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100">
+                                                    <Shield className="h-3 w-3" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Protocol Secured</span>
+                                                </div>
+                                            ) : notification.type === 'DOCTOR_APPROVAL' ? (
+                                                <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-full border border-amber-100">
+                                                    <Shield className="h-3 w-3" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Pending Review</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
+                                                    <FileText className="h-3 w-3" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Ledger Entry</span>
+                                                </div>
+                                            )}
+                                            
+                                            {notification.type === 'DOCTOR_APPROVAL' && notification.doctorId && (
+                                                <div className="ml-auto flex items-center gap-2">
+                                                    {!notification.isRead ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleDoctorResolution(notification._id, notification.doctorId, 'reject')}
+                                                                className="px-3 py-1.5 text-[10px] font-black text-red-600 bg-red-50 hover:bg-red-100 rounded-lg uppercase tracking-widest transition-all"
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDoctorResolution(notification._id, notification.doctorId, 'verify')}
+                                                                className="px-3 py-1.5 text-[10px] font-black text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg uppercase tracking-widest transition-all shadow-sm shadow-emerald-100"
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <span className="px-3 py-1.5 text-[10px] font-black text-slate-400 bg-slate-50 rounded-lg uppercase tracking-widest border border-slate-100">
+                                                            Action Completed
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                            
+                                            {!notification.isRead && notification.type !== 'DOCTOR_APPROVAL' && (
                                                 <button
                                                     onClick={() => markAsRead(notification._id)}
-                                                    className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1 px-2 py-1 bg-teal-50 rounded-md transition-colors"
+                                                    className="ml-auto text-[10px] font-black text-teal-600 uppercase tracking-widest hover:text-teal-700 px-3 py-1 hover:bg-teal-50 rounded-lg transition-all"
                                                 >
-                                                    <Check className="h-3 w-3" />
-                                                    Mark as read
+                                                    Mark Read
                                                 </button>
                                             )}
                                         </div>
                                     </div>
                                 </div>
+                                {!notification.isRead && (
+                                    <div className="absolute top-6 right-6 h-2 w-2 bg-teal-500 rounded-full animate-ping"></div>
+                                )}
                             </div>
                         ))}
                     </div>
                 )}
-            </main>
+            </div>
         </div>
     )
 }

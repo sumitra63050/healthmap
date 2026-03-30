@@ -19,14 +19,13 @@ export default function Login() {
             localStorage.clear()
             localStorage.setItem("token", res.data.token)
             localStorage.setItem("role", res.data.role)
+            localStorage.setItem("userRole", res.data.role)
             if (res.data.user && res.data.user.name) {
                 localStorage.setItem("userName", res.data.user.name)
             }
 
             // Redirect based on role
-            if (res.data.role === 'admin') {
-                window.location = "/admin"
-            } else if (res.data.role === 'doctor') {
+            if (res.data.role === 'doctor') {
                 window.location = "/doctor"
             } else if (res.data.role === 'hospital') {
                 window.location = "/hospital"
