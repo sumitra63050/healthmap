@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: healthmap
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        fromConfig: MONGO_URI
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 10000
+      - key: CLOUDINARY_CLOUD_NAME
+        fromConfig: CLOUDINARY_CLOUD_NAME
+      - key: CLOUDINARY_API_KEY
+        fromConfig: CLOUDINARY_API_KEY
+      - key: CLOUDINARY_API_SECRET
+        fromConfig: CLOUDINARY_API_SECRET
