@@ -9,14 +9,14 @@ services:
       - key: NODE_ENV
         value: production
       - key: MONGO_URI
-        fromConfig: MONGO_URI
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: PORT
         value: 10000
       - key: CLOUDINARY_CLOUD_NAME
-        fromConfig: CLOUDINARY_CLOUD_NAME
+        sync: false
       - key: CLOUDINARY_API_KEY
-        fromConfig: CLOUDINARY_API_KEY
+        sync: false
       - key: CLOUDINARY_API_SECRET
-        fromConfig: CLOUDINARY_API_SECRET
+        sync: false
