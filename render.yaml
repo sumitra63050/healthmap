@@ -3,7 +3,7 @@ services:
     name: healthmap
     env: node
     plan: free
-    buildCommand: npm run build
+    buildCommand: npm install && cd backend && npm install && cd ../frontend && npm install && npm run build
     startCommand: cd backend && npm start
     envVars:
       - key: NODE_ENV
@@ -12,8 +12,6 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
-      - key: PORT
-        value: 10000
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
