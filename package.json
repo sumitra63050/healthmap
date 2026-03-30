@@ -4,7 +4,7 @@
   "description": "HealthMap MERN Stack Application",
   "main": "backend/server.js",
   "scripts": {
-    "build-prod": "(cd backend && npm install) && (cd frontend && npm install && npm run build)",
+    "build-prod": "(cd backend && npm install) && (cd frontend && npm install --include=dev && npm run build)",
     "start": "cd backend && npm start",
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\""
   },
